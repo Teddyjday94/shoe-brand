@@ -1,27 +1,27 @@
 // HOME: scroll-driven 3D inspection with hotspots + buy panel
 import * as THREE from 'three';
-import { $, $$, clamp, lerp, ease, pad, wait, flashClass, sizePicker, cart } from './ui.js';
-import { PRODUCTS, productByVariant } from './data.js';
+import { $, clamp, lerp, ease, pad, wait, flashClass, sizePicker, cart } from './ui.js';
+import { SHOES, shoeById } from './data.js';
 import { loadShoe, studioEnvironment } from './shoe.js';
 
-/* ── inspection steps: camera pos, look target, shoe yaw/roll ── */
+/* ── inspection steps: camera pos, look target, shoe yaw/roll (copy comes from each shoe) ── */
 const STEPS = [
-  { mega: ['SLAB', 'MK—1<sup>®</sup>'], title: 'THE WHOLE<br>OBJECT',
-    copy: 'One shoe. 412 grams. No air bubble, no story about a mountain. Just a sole you could build a wall on.',
+  { mega: null, title: 'THE WHOLE<br>OBJECT',
     cam: [3.4, 1.5, 4.4], look: [0, 0.25, 0], yaw: -0.5, roll: 0 },
   { mega: ['TOE', 'BOX'], title: 'TOE BOX /<br>01', spot: 'TOE BOX',
-    copy: 'Suede over mesh over a TPU cage. Kick a kerb. Kick another one. The cage is there so you can stop being careful.',
     cam: [4.4, 1.3, 2.8], look: [0.8, 0.3, 0], yaw: -0.2, roll: 0 },
   { mega: ['LACE', 'LOCK'], title: 'LACING /<br>02', spot: 'LACING',
-    copy: '140cm of flat waxed cord through seven eyelets. Tie it once in October. Untie it in March.',
     cam: [0.8, 4.8, 2.6], look: [0.1, 0.4, 0], yaw: 0.3, roll: 0 },
   { mega: ['HEEL', 'CUP'], title: 'HEEL /<br>03', spot: 'HEEL CUP',
-    copy: 'A moulded counter that holds your heel like a vice holds a pipe. Firm for the first fortnight. Then it is yours.',
     cam: [-4.4, 1.6, 2.8], look: [-0.7, 0.4, 0], yaw: 0.1, roll: 0 },
   { mega: ['OUT', 'SOLE'], title: 'OUTSOLE /<br>04', spot: 'MIDSOLE / OUTSOLE',
-    copy: '4mm lugs in hazard rubber. Grip on wet ramps, gravel, oil. The pattern is not decorative. Nothing here is.',
     cam: [0.4, 1.4, 5.6], look: [0, 0.5, 0], yaw: 0.15, roll: -Math.PI * 0.62 },
 ];
+
+/* ── which shoe + colorway: ?s=hi1&c=2 (old links used ?v= for the MK-1 colorway) ── */
+const qs = new URLSearchParams(location.search);
+let shoe = shoeById(qs.get('s'));
+let cwIndex = clamp(+(qs.get('c') ?? qs.get('v') ?? 0) || 0, 0, shoe.colorways.length - 1);
 
 /* ── loader overlay: the boot sequence plays once per session ── */
 const booted = document.documentElement.classList.contains('booted');
@@ -49,7 +49,7 @@ const loader = {
   },
 };
 loader.log('MOUNTING SUBSTRATE', 'OK');
-const meshLine = loader.log('FETCHING MESH / 7.8 MB', '...');
+const meshLine = loader.log(`FETCHING ${shoe.name} / ${(shoe.bytes / 1e6).toFixed(1)} MB`, '...');
 
 /* ── renderer / scene ── */
 const canvas = $('#gl');
@@ -83,19 +83,60 @@ scene.add(floor);
 const pivot = new THREE.Group(); // yaw + roll applied here
 scene.add(pivot);
 
-/* ── load ── */
-let model = null, currentVariant = clamp(+(new URLSearchParams(location.search).get('v') || 0), 0, PRODUCTS.length - 1);
+/* ── load / swap shoes ── */
+let model = null, loadToken = 0;
 const wireMat = new THREE.MeshBasicMaterial({ color: 0xe61919, wireframe: true });
+const product = () => ({ ...shoe.colorways[cwIndex], shoe, key: `${shoe.id}-${shoe.colorways[cwIndex].key}` });
 
-loadShoe((p) => loader.pct(p * 0.95)).then(async (m) => {
+async function showShoe(def, onProgress = () => {}) {
+  const token = ++loadToken;
+  const stageEl = $('.stage'), ls = $('#load-state');
+  stageEl.classList.add('is-swapping');
+  ls.classList.remove('done');
+  ls.textContent = `LOADING ${def.name} ......`;
+  const m = await loadShoe(def, (p) => {
+    onProgress(p);
+    const n = Math.round(p * 6);
+    ls.textContent = `LOADING ${def.name} ` + '■'.repeat(n) + '.'.repeat(6 - n);
+  });
+  if (token !== loadToken) { m.dispose(); return; } // a newer pick won the race
+  if (model) { pivot.remove(model.root); model.dispose(); }
   model = m;
-  meshLine.querySelector('b').textContent = 'OK';
   pivot.add(m.root);
-  $('#t-tris').textContent = m.tris.toLocaleString('en');
-  $('#load-state').textContent = 'MESH LOADED ■■■■■■';
-  $('#load-state').classList.add('done');
+  if ($('#wire').checked) m.setWire(wireMat);
+  await m.setColorway(shoe.colorways[cwIndex]);
   buildHotspots();
-  await selectVariant(currentVariant);
+  $('#t-tris').textContent = m.tris.toLocaleString('en');
+  $('#unit').textContent = `UNIT / ${def.name}`;
+  ls.textContent = `${def.name} LOADED ■■■■■■`;
+  ls.classList.add('done');
+  stageEl.classList.remove('is-swapping');
+}
+
+function syncUrl() {
+  const u = new URL(location.href);
+  u.search = shoe.id === SHOES[0].id && cwIndex === 0 ? '' : `?s=${shoe.id}&c=${cwIndex}`;
+  history.replaceState(null, '', u);
+}
+
+function pickShoe(def) {
+  if (def === shoe) return;
+  shoe = def; cwIndex = 0; buySize = null;
+  stepShown = -1; // re-render step 0's headline with the new name
+  renderPickers();
+  syncUrl();
+  showShoe(def).catch(() => { $('#load-state').textContent = 'MESH FAILED. TRY AGAIN.'; });
+}
+
+function pickColorway(i) {
+  cwIndex = i; buySize = null;
+  renderPickers();
+  syncUrl();
+  model?.setColorway(shoe.colorways[i]);
+}
+
+showShoe(shoe, (p) => loader.pct(p * 0.95)).then(() => {
+  meshLine.querySelector('b').textContent = 'OK';
   loader.log('READY. DO NOT MACHINE WASH.', '■');
   loader.pct(1);
   loader.done();
@@ -104,30 +145,34 @@ loadShoe((p) => loader.pct(p * 0.95)).then(async (m) => {
   loader.log('MESH FAILED. RELOAD THE PAGE.', '×');
 });
 
-async function selectVariant(i) {
-  currentVariant = i;
-  $$('#variants button').forEach((b, j) => b.setAttribute('aria-pressed', j === i));
-  updateBuy();
-  if (model) await model.selectVariant(i);
-}
-
 $('#wire').addEventListener('change', (e) => model?.setWire(e.target.checked ? wireMat : null));
 
-/* ── colorway + buy panel ── */
-PRODUCTS.forEach((p) => {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.textContent = pad(p.variant + 1) + ' ' + p.name;
-  b.setAttribute('aria-pressed', p.variant === currentVariant);
-  b.addEventListener('click', () => { buySize = null; selectVariant(p.variant); });
-  $('#variants').append(b);
-});
+/* ── shoe + colorway pickers, buy panel ── */
+function renderPickers() {
+  $('#shoes').replaceChildren(...SHOES.map((s) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.innerHTML = `<b>${s.name}</b><small>${s.type}</small>`;
+    b.setAttribute('aria-pressed', s === shoe);
+    b.addEventListener('click', () => pickShoe(s));
+    return b;
+  }));
+  $('#variants').replaceChildren(...shoe.colorways.map((c, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = pad(i + 1) + ' ' + c.name;
+    b.setAttribute('aria-pressed', i === cwIndex);
+    b.addEventListener('click', () => pickColorway(i));
+    return b;
+  }));
+  updateBuy();
+}
 
 let buySize = null;
 function updateBuy() {
-  const p = productByVariant(currentVariant);
+  const p = product();
   sizePicker($('#buy-sizes'), p, (s) => { buySize = s; $('#buy-size-msg').textContent = ''; }, buySize);
-  $('#buy-name').textContent = `${p.name} / ${p.stock ? pad(p.stock) + ' LEFT' : 'SOLD OUT'}`;
+  $('#buy-name').textContent = `${shoe.name} ${p.name} / ${p.stock ? pad(p.stock) + ' LEFT' : 'SOLD OUT'}`;
   $('#buy-price').textContent = '€' + p.price;
   const btn = $('#buy-btn');
   btn.disabled = p.stock === 0;
@@ -139,14 +184,16 @@ $('#buy-btn').addEventListener('click', () => {
     flashClass($('#buy-sizes'), 'shake');
     return;
   }
-  cart.add(productByVariant(currentVariant).key, buySize);
+  cart.add(product().key, buySize);
 });
-updateBuy();
+renderPickers();
 
 /* ── 3D hotspots: surface points found by raycasting, projected to DOM each frame ── */
 const ray = new THREE.Raycaster();
 const spots = [];
 function buildHotspots() {
+  spots.length = 0;
+  $('#hotspots').replaceChildren();
   pivot.rotation.set(0, 0, 0); pivot.position.set(0, 0, 0);
   pivot.updateMatrixWorld(true);
   const probes = [
@@ -247,11 +294,12 @@ function showStep(i) {
   stepShown = i;
   const s = STEPS[i];
   const mega = $('#mega');
-  mega.innerHTML = s.mega.map((t) => `<span>${t}</span>`).join('');
+  const words = s.mega || ['SLAB', shoe.name.replace('-', '—') + '<sup>®</sup>'];
+  mega.innerHTML = words.map((t) => `<span>${t}</span>`).join('');
   flashClass(mega, 'glitch');
   $('#step-num').textContent = pad(i + 1);
   $('#step-title').innerHTML = s.title;
-  $('#step-copy').textContent = s.copy;
+  $('#step-copy').textContent = shoe.steps[i];
 }
 
 /* ── resize ── */

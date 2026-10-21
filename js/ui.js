@@ -79,11 +79,11 @@ function renderCart() {
     <li class="line">
       <img src="${it.p.img}" alt="">
       <div>
-        <samp>${pad(n + 1)} / SKU MK1-${pad(it.p.variant + 1, 3)}</samp>
-        <b>MK-1 / ${it.p.name}</b>
+        <samp>${pad(n + 1)} / SKU ${it.p.sku}</samp>
+        <b>${it.p.shoe.name} / ${it.p.name}</b>
         <samp>EU ${it.size} · €${it.p.price}</samp>
       </div>
-      <button type="button" class="line__x" data-id="${it.id}" aria-label="Remove MK-1 ${it.p.name} EU ${it.size}">×</button>
+      <button type="button" class="line__x" data-id="${it.id}" aria-label="Remove ${it.p.shoe.name} ${it.p.name} EU ${it.size}">×</button>
     </li>`).join('');
 }
 

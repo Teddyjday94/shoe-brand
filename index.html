@@ -55,7 +55,7 @@
       <canvas class="stage__canvas" id="gl" data-cursor="DRAG" aria-label="Interactive 3D model of the SLAB MK-1 sneaker. Drag to rotate."></canvas>
 
       <div class="stage__corner stage__corner--tl">
-        <samp>UNIT / MK-1</samp><samp>REV 4.0.0</samp><samp id="load-state">LOADING MESH ......</samp>
+        <samp id="unit">UNIT / MK-1</samp><samp>REV 4.0.0</samp><samp id="load-state">LOADING MESH ......</samp>
       </div>
 
       <div class="hotspots" id="hotspots"></div>
@@ -81,6 +81,10 @@
           <div><dt>TRIS</dt><dd id="t-tris">0</dd></div>
           <div><dt>FPS</dt><dd id="t-fps" class="ok">00</dd></div>
         </dl>
+        <div class="variants variants--shoes" role="group" aria-label="Shoe">
+          <samp>MODEL</samp>
+          <div class="variants__row" id="shoes"></div>
+        </div>
         <div class="variants" role="group" aria-label="Colorway">
           <samp>COLORWAY</samp>
           <div class="variants__row" id="variants"></div>
@@ -103,7 +107,7 @@
   <section class="dir" aria-label="More">
     <a class="dir__item" href="shop.html">
       <samp class="dir__num">02 / SHOP</samp>
-      <h2 class="dir__title">THREE<br>COLORWAYS.<br><s>FOUR.</s></h2>
+      <h2 class="dir__title">THREE SHOES.<br>NINE<br>COLORWAYS.</h2>
       <img class="dir__img" src="assets/mk1-beach.png" alt="" loading="lazy">
       <span class="dir__go">ENTER &gt;&gt;&gt;</span>
     </a>
@@ -139,7 +143,9 @@
   <div class="barcode" aria-hidden="true"></div>
   <div class="foot__meta">
     <samp>© 2026 SLAB FOOTWEAR (FICTIONAL). A MOCK-UP.</samp>
-    <samp>3D MODEL: “MATERIALSVARIANTSSHOE” © SHOPIFY, CC-BY 4.0, VIA KHRONOS GLTF-SAMPLE-ASSETS.</samp>
+    <samp>MK-1 MODEL: “MATERIALSVARIANTSSHOE” © SHOPIFY, CC-BY 4.0, VIA KHRONOS GLTF-SAMPLE-ASSETS.</samp>
+    <samp>HI-1 MODEL: “SNEAKER” BY SHADERSCULPTOR, GENERATED WITH SLOYD, CC-BY 4.0.</samp>
+    <samp>TRK-1 MODEL: “A SLEEK, EDGY SNEAKER…” BY PURPLESHADE3D, GENERATED WITH SLOYD, CC-BY 4.0.</samp>
     <samp>NO COOKIES. NO TRACKING. NO DISCOUNT CODES.</samp>
   </div>
 </footer>

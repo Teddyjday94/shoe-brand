@@ -1,18 +1,38 @@
-// loads the MK-1 model, normalised: toe points +X, 3 units long, sole on y=0
+// loads any shoe in the line, normalised: toe points +X, 3 units long, sole on y=0
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-export const SHOE_URL = new URL('../assets/shoe.glb', import.meta.url).href;
-export const SHOE_BYTES = 7833592;
+const BASE = new URL('../', import.meta.url);
+const loader = new GLTFLoader();
 
 export function studioEnvironment(renderer) {
   return new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
 }
 
-export function loadShoe(onProgress = () => {}) {
+// hue-rotate / saturate / lighten a colour in YIQ space (for single-texture models)
+const TINT_GLSL = (v) => `
+  {
+    vec3 yiq = mat3(0.299, 0.596, 0.211, 0.587, -0.274, -0.523, 0.114, -0.322, 0.312) * ${v};
+    float cs = cos(uTintHue), sn = sin(uTintHue);
+    yiq.yz = mat2(cs, sn, -sn, cs) * yiq.yz * uTintSat;
+    ${v} = max(mat3(1.0, 1.0, 1.0, 0.956, -0.272, -1.106, 0.621, -0.647, 1.703) * yiq * uTintLight, 0.0);
+  }`;
+
+function addTint(material, uniforms) {
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms);
+    shader.fragmentShader = 'uniform float uTintHue, uTintSat, uTintLight;\n' + shader.fragmentShader
+      .replace('#include <map_fragment>', '#include <map_fragment>' + TINT_GLSL('diffuseColor.rgb'))
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>' + TINT_GLSL('totalEmissiveRadiance'));
+  };
+  material.customProgramCacheKey = () => 'slab-tint';
+  material.needsUpdate = true;
+}
+
+export function loadShoe(shoeDef, onProgress = () => {}) {
   return new Promise((resolve, reject) => {
-    new GLTFLoader().load(SHOE_URL, (gltf) => {
+    loader.load(new URL(shoeDef.file, BASE).href, (gltf) => {
       const shoe = gltf.scene;
       const parser = gltf.parser;
 
@@ -30,22 +50,24 @@ export function loadShoe(onProgress = () => {}) {
       const root = new THREE.Group(), holder = new THREE.Group();
       holder.add(shoe);
       root.add(holder);
-      // the heel collar is the tallest part, so if it's on +X the shoe is backwards
-      if (heightAt(root, 1.1) > heightAt(root, -1.1)) holder.rotation.y = Math.PI;
+      // the heel collar is usually the tallest part, so if it's on +X the shoe is backwards;
+      // a shoe can override the guess with `flip`
+      const backwards = shoeDef.flip ?? heightAt(root, 1.1) > heightAt(root, -1.1);
+      if (backwards) holder.rotation.y = Math.PI;
       root.updateMatrixWorld(true);
 
+      const tint = { uTintHue: { value: 0 }, uTintSat: { value: 1 }, uTintLight: { value: 1 } };
+      const hasVariants = !!gltf.userData.gltfExtensions?.KHR_materials_variants;
       let tris = 0;
       shoe.traverse((o) => {
         if (!o.isMesh) return;
         o.castShadow = true;
+        if (!hasVariants) addTint(o.material, tint);
         o.userData.mat = o.material;
         tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
       });
 
-      const ext = gltf.userData.gltfExtensions?.KHR_materials_variants;
-      const variantNames = ext ? ext.variants.map((v) => v.name) : ['default'];
       let wire = null;
-
       async function selectVariant(i) {
         const jobs = [];
         shoe.traverse((o) => {
@@ -60,13 +82,31 @@ export function loadShoe(onProgress = () => {}) {
         await Promise.all(jobs);
       }
 
+      async function setColorway(cw) {
+        if (cw.variant != null) return selectVariant(cw.variant);
+        tint.uTintHue.value = THREE.MathUtils.degToRad(cw.tint.hue);
+        tint.uTintSat.value = cw.tint.sat;
+        tint.uTintLight.value = cw.tint.light;
+      }
+
       function setWire(mat) {
         wire = mat;
         shoe.traverse((o) => { if (o.isMesh) o.material = wire || o.userData.mat; });
       }
 
-      resolve({ root, variantNames, selectVariant, setWire, tris: Math.round(tris) });
-    }, (e) => onProgress(Math.min(e.loaded / (e.total || SHOE_BYTES), 1)), reject);
+      function dispose() {
+        shoe.traverse((o) => {
+          if (!o.isMesh) return;
+          o.geometry.dispose();
+          [].concat(o.userData.mat).forEach((m) => {
+            Object.values(m).forEach((v) => { if (v?.isTexture) v.dispose(); });
+            m.dispose();
+          });
+        });
+      }
+
+      resolve({ root, def: shoeDef, setColorway, setWire, dispose, tris: Math.round(tris) });
+    }, (e) => onProgress(Math.min(e.loaded / (e.total || shoeDef.bytes), 1)), reject);
   });
 }
 

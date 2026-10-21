@@ -1,7 +1,7 @@
-// LAB: live security-camera feed of the MK-1 sitting on a pallet in Dock B
+// LAB: live security-camera feed of a pair sitting on a pallet in Dock B
 import * as THREE from 'three';
 import { $, $$, clamp, pad } from './ui.js';
-import { PRODUCTS } from './data.js';
+import { SHOES } from './data.js';
 import { loadShoe, studioEnvironment } from './shoe.js';
 
 const canvas = $('#cctv');
@@ -220,33 +220,50 @@ CAMS.forEach((c, i) => {
   $('#cams').append(b);
 });
 
-/* ── shoe ── */
-let model = null, variant = 0;
-PRODUCTS.forEach((p) => {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.textContent = pad(p.variant + 1) + ' ' + p.name;
-  b.setAttribute('aria-pressed', p.variant === 0);
-  b.addEventListener('click', async () => {
-    variant = p.variant;
-    $$('#feed-variants button').forEach((x, j) => x.setAttribute('aria-pressed', j === variant));
-    $('#feed-variant').textContent = 'MK-1 / ' + p.name;
-    await model?.selectVariant(variant);
-  });
-  $('#feed-variants').append(b);
-});
-
+/* ── shoe on the pallet: pick a model, then a colorway ── */
+let model = null, shoe = SHOES[0], cw = 0, loadToken = 0;
 const waitEl = $('#cctv-wait');
-Promise.all([buildDock(), loadShoe((p) => { waitEl.querySelector('b').textContent = pad(Math.round(p * 100), 3) + '%'; })])
-  .then(async ([, m]) => {
-    model = m;
-    m.root.position.set(0.4, 1.24, -0.4);
-    m.root.rotation.y = -0.35;
-    m.root.traverse((o) => { if (o.isMesh) o.receiveShadow = true; });
-    scene.add(m.root);
-    await m.selectVariant(variant);
-    waitEl.classList.add('is-done');
-  })
+const label = () => { $('#feed-variant').textContent = `${shoe.name} / ${shoe.colorways[cw].name}`; };
+
+function renderPickers() {
+  $('#feed-shoes').replaceChildren(...SHOES.map((s) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.name;
+    b.setAttribute('aria-pressed', s === shoe);
+    b.addEventListener('click', () => { if (s !== shoe) { shoe = s; cw = 0; renderPickers(); placeShoe(); } });
+    return b;
+  }));
+  $('#feed-variants').replaceChildren(...shoe.colorways.map((c, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = pad(i + 1) + ' ' + c.name;
+    b.setAttribute('aria-pressed', i === cw);
+    b.addEventListener('click', () => { cw = i; renderPickers(); model?.setColorway(c); });
+    return b;
+  }));
+  label();
+}
+
+async function placeShoe() {
+  const token = ++loadToken;
+  waitEl.classList.remove('is-done');
+  waitEl.querySelector('samp').textContent = `ACQUIRING ${shoe.name}`;
+  const m = await loadShoe(shoe, (p) => { waitEl.querySelector('b').textContent = pad(Math.round(p * 100), 3) + '%'; });
+  if (token !== loadToken) { m.dispose(); return; }
+  if (model) { scene.remove(model.root); model.dispose(); }
+  model = m;
+  m.root.position.set(0.4, 1.24, -0.4);
+  m.root.rotation.y = -0.35;
+  m.root.traverse((o) => { if (o.isMesh) o.receiveShadow = true; });
+  scene.add(m.root);
+  await m.setColorway(shoe.colorways[cw]);
+  setCam(camIdx); // hard cut onto the new pair
+  waitEl.classList.add('is-done');
+}
+
+renderPickers();
+Promise.all([buildDock(), placeShoe()])
   .catch(() => { waitEl.querySelector('b').textContent = 'NO SIGNAL'; });
 
 /* ── size + loop ── */
