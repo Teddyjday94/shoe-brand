@@ -154,6 +154,17 @@ if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
   document.addEventListener('pointerleave', () => cur.classList.remove('is-on'));
 }
 
+/* ── links to the page you're already on: glide to the top instead of reloading ── */
+const pageOf = (url) => url.pathname.replace(/\/index\.html$/, '/');
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a[href]');
+  if (!a || e.metaKey || e.ctrlKey || e.shiftKey || a.target === '_blank') return;
+  const to = new URL(a.href, location.href);
+  if (to.origin !== location.origin || pageOf(to) !== pageOf(location) || to.search !== location.search || to.hash) return;
+  e.preventDefault();
+  scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+});
+
 /* ── reveal on enter ── */
 const revealIO = new IntersectionObserver((entries) => {
   entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-in'); revealIO.unobserve(e.target); } });

@@ -23,23 +23,28 @@ const STEPS = [
     cam: [0.4, 1.4, 5.6], look: [0, 0.5, 0], yaw: 0.15, roll: -Math.PI * 0.62 },
 ];
 
-/* ── loader overlay ── */
+/* ── loader overlay: the boot sequence plays once per session ── */
+const booted = document.documentElement.classList.contains('booted');
+if (booted) { $('#loader').remove(); document.documentElement.classList.remove('is-loading'); }
 const loader = {
   log(text, state = '') {
     const li = document.createElement('li');
     li.innerHTML = `<span>&gt; ${text}</span><b>${state}</b>`;
-    $('#loader-log').append(li);
+    $('#loader-log')?.append(li);
     return li;
   },
   pct(p) {
+    if (booted) return;
     $('#loader-pct').textContent = pad(Math.round(p * 100), 3);
     $('#loader-bar').style.width = (p * 100).toFixed(1) + '%';
   },
   async done() {
+    try { sessionStorage.setItem('slab-booted', '1'); } catch { /* private mode: boot every time */ }
+    if (booted) return;
     await wait(300);
     $('#loader').classList.add('out');
     document.documentElement.classList.remove('is-loading');
-    await wait(900);
+    await wait(950);
     $('#loader').remove();
   },
 };
