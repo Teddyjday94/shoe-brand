@@ -18,13 +18,6 @@
 </head>
 <body>
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0"/></filter>
-</svg>
-<div class="grain" aria-hidden="true"><svg width="100%" height="100%"><rect width="100%" height="100%" filter="url(#grain)"/></svg></div>
-
-<div class="cursor" aria-hidden="true"><span class="cursor__x"></span><span class="cursor__y"></span><samp class="cursor__label">0000 / 0000</samp></div>
-
 <div class="loader" id="loader" role="status" aria-live="polite">
   <div class="loader__top"><samp>SLAB® / BOOT SEQUENCE</samp><samp>DROP 004</samp></div>
   <ol class="loader__log" id="loader-log"></ol>
@@ -33,24 +26,24 @@
 </div>
 
 <header class="bar">
-  <a class="bar__logo" href="#top">SLAB<sup>®</sup></a>
-  <nav class="bar__nav">
-    <a href="#inspect">[ INSPECT ]</a>
-    <a href="#footage">[ FOOTAGE ]</a>
-    <a href="#inventory">[ INVENTORY ]</a>
-    <a href="#manifesto">[ RULES ]</a>
+  <a class="bar__logo" href="index.html">SLAB<sup>®</sup></a>
+  <nav class="bar__nav" aria-label="Main">
+    <a href="index.html" aria-current="page">[ INSPECT ]</a>
+    <a href="shop.html">[ SHOP ]</a>
+    <a href="lab.html">[ LAB ]</a>
+    <a href="rules.html">[ RULES ]</a>
   </nav>
   <button class="bar__cart" type="button" aria-controls="drawer" aria-expanded="false">CART <output id="cart-count">00</output></button>
 </header>
 
 <div class="ticker" aria-hidden="true">
   <div class="ticker__track">
-    <span>DROP 004 /// NOT AVAILABLE IN STORES /// NO RESTOCK /// POURED IN BATCHES OF 400 /// SIZES EU 36—48 /// DO NOT MACHINE WASH /// </span>
-    <span>DROP 004 /// NOT AVAILABLE IN STORES /// NO RESTOCK /// POURED IN BATCHES OF 400 /// SIZES EU 36—48 /// DO NOT MACHINE WASH /// </span>
+    <span>DROP 004 /// NOT AVAILABLE IN STORES /// NO RESTOCK /// POURED IN BATCHES OF 400 /// SIZES EU 38—46 /// DO NOT MACHINE WASH /// </span>
+    <span>DROP 004 /// NOT AVAILABLE IN STORES /// NO RESTOCK /// POURED IN BATCHES OF 400 /// SIZES EU 38—46 /// DO NOT MACHINE WASH /// </span>
   </div>
 </div>
 
-<main id="top">
+<main>
 
   <!-- ─── INSPECTION: sticky 3D stage driven by scroll ─── -->
   <section class="inspect" id="inspect">
@@ -58,11 +51,12 @@
       <div class="stage__type" aria-hidden="true">
         <h1 class="mega" id="mega"><span>SLAB</span><span>MK—1<sup>®</sup></span></h1>
       </div>
-      <canvas class="stage__canvas" id="gl" aria-label="Interactive 3D model of the SLAB MK-1 sneaker. Drag to rotate."></canvas>
+      <canvas class="stage__canvas" id="gl" data-cursor="DRAG" aria-label="Interactive 3D model of the SLAB MK-1 sneaker. Drag to rotate."></canvas>
 
       <div class="stage__corner stage__corner--tl">
         <samp>UNIT / MK-1</samp><samp>REV 4.0.0</samp><samp id="load-state">LOADING MESH ......</samp>
       </div>
+
       <div class="hotspots" id="hotspots"></div>
 
       <div class="stage__corner stage__corner--bl">
@@ -96,7 +90,7 @@
             <div class="sizes" id="buy-sizes"></div>
           </div>
           <div class="buy__row">
-            <div class="buy__price"><samp id="buy-name">MK-1 / —</samp><b id="buy-price">€—</b></div>
+            <div class="buy__price"><samp id="buy-name">—</samp><b id="buy-price">€—</b></div>
             <button class="btn btn--buy" type="button" id="buy-btn">RESERVE &gt;&gt;&gt;</button>
           </div>
         </div>
@@ -104,82 +98,40 @@
     </div>
   </section>
 
-  <!-- ─── SPEC SHEET ─── -->
-  <section class="spec">
-    <div class="spec__img halftone">
-      <img src="assets/flash.jpg" alt="SLAB MK-1 in bone colorway photographed with direct flash on cracked concrete" loading="lazy">
-      <samp class="tag">FIG. 1 — FOUND ON SITE, 02:14</samp>
-    </div>
-    <div class="spec__body">
-      <p class="kicker">[ SPEC SHEET / MK-1 ]</p>
-      <h2 class="h2">BUILT LIKE<br>A CAR PARK.</h2>
-      <p class="serif">“It is not comfortable. It is correct.”</p>
-      <table class="table">
-        <tbody>
-          <tr><th>01</th><td>UPPER</td><td>SUEDE / 600D MESH / TPU CAGE</td></tr>
-          <tr><th>02</th><td>MIDSOLE</td><td>EVA, 38MM STACK, POURED</td></tr>
-          <tr><th>03</th><td>OUTSOLE</td><td>RUBBER, 4MM LUG, HAZARD</td></tr>
-          <tr><th>04</th><td>LACES</td><td>FLAT, WAXED, 140CM</td></tr>
-          <tr><th>05</th><td>WEIGHT</td><td><data value="412">412 G</data> (EU 42)</td></tr>
-          <tr><th>06</th><td>DROP</td><td><data value="10">10 MM</data></td></tr>
-          <tr><th>07</th><td>WARRANTY</td><td><s>LIFETIME</s> UNTIL IT BREAKS</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <div class="stripes" aria-hidden="true"></div>
-
-  <!-- ─── FOOTAGE: dithered live render of the 3D scene ─── -->
-  <section class="footage" id="footage">
-    <div class="footage__head">
-      <p class="kicker">[ FOOTAGE ]</p>
-      <h2 class="h2">CAM 03.<br>LOADING DOCK.</h2>
-      <p class="mono-copy">Live feed. 1-bit. Rendered from the same object you just turned over. Change the colorway up top and watch it change here. We are not hiding anything.</p>
-    </div>
-    <div class="cctv">
-      <canvas id="cctv" width="240" height="135" aria-label="Dithered surveillance-style live render of the sneaker"></canvas>
-      <div class="cctv__hud">
-        <samp class="rec">● REC</samp>
-        <samp id="cctv-time">00:00:00:00</samp>
-        <samp class="cctv__bl">CAM 03 / DOCK B</samp>
-        <samp class="cctv__br" id="cctv-variant">VARIANT —</samp>
-      </div>
-    </div>
-    <figure class="footage__still halftone halftone--dark">
-      <img src="assets/stairs.jpg" alt="Grainy black and white photo of worn sneakers on a skateboard on concrete stairs" loading="lazy">
-      <figcaption><samp>FIG. 2 — FIELD TEST, STAIRWELL C. 3 MONTHS. 0 RETURNS.</samp></figcaption>
-    </figure>
-  </section>
-
-  <!-- ─── INVENTORY ─── -->
-  <section class="inventory" id="inventory">
-    <div class="inventory__head">
-      <h2 class="h2">INVENTORY</h2>
-      <samp>3 UNITS / <span class="red">BATCH 004 OF 004</span></samp>
-    </div>
-    <div class="grid" id="products"></div>
-  </section>
-
-  <!-- ─── MANIFESTO ─── -->
-  <section class="manifesto" id="manifesto">
-    <ol>
-      <li><span>01</span>COMFORT IS NOT <s>A FEELING</s> A SPEC.</li>
-      <li><span>02</span>NO ATHLETES. <s>NO AMBASSADORS.</s> NO.</li>
-      <li><span>03</span>IF IT SQUEAKS, IT'S WORKING.</li>
-      <li><span>04</span>WE MAKE ONE SHOE. <s>BADLY.</s> ON PURPOSE.</li>
-    </ol>
+  <!-- ─── DIRECTORY: the other pages ─── -->
+  <section class="dir" aria-label="More">
+    <a class="dir__item" href="shop.html">
+      <samp class="dir__num">02 / SHOP</samp>
+      <h2 class="dir__title">THREE<br>COLORWAYS.<br><s>FOUR.</s></h2>
+      <img class="dir__img" src="assets/mk1-beach.png" alt="" loading="lazy">
+      <span class="dir__go">ENTER &gt;&gt;&gt;</span>
+    </a>
+    <a class="dir__item dir__item--dark" href="lab.html">
+      <samp class="dir__num">03 / LAB</samp>
+      <h2 class="dir__title">SPEC SHEET.<br>LIVE FEED.<br>DOCK B.</h2>
+      <div class="dir__img dir__img--photo halftone"><img src="assets/flash.jpg" alt="" loading="lazy"></div>
+      <span class="dir__go">ENTER &gt;&gt;&gt;</span>
+    </a>
+    <a class="dir__item dir__item--red" href="rules.html">
+      <samp class="dir__num">04 / RULES</samp>
+      <h2 class="dir__title">COMFORT IS<br>NOT A<br>FEELING.</h2>
+      <p class="dir__copy">Four rules. No exceptions. One of them is about squeaking.</p>
+      <span class="dir__go">ENTER &gt;&gt;&gt;</span>
+    </a>
   </section>
 
 </main>
 
 <footer class="foot">
   <div class="foot__mega" aria-hidden="true">SLAB<sup>®</sup></div>
+  <nav class="foot__nav" aria-label="Footer">
+    <a href="index.html">01 / INSPECT</a><a href="shop.html">02 / SHOP</a><a href="lab.html">03 / LAB</a><a href="rules.html">04 / RULES</a>
+  </nav>
   <form class="signup" id="signup">
     <label for="email"><samp>DROP 005 NOTICE — ENTER EMAIL</samp></label>
     <div class="signup__row">
       <input id="email" type="email" required placeholder="YOU@SOMEWHERE.COM" autocomplete="email">
-      <button type="submit">&gt;&gt;&gt;</button>
+      <button type="submit" aria-label="Sign up">&gt;&gt;&gt;</button>
     </div>
     <output id="signup-out"></output>
   </form>
@@ -191,21 +143,6 @@
   </div>
 </footer>
 
-<div class="scrim" id="scrim" hidden></div>
-<aside class="drawer" id="drawer" aria-label="Cart" aria-hidden="true" inert>
-  <div class="drawer__head">
-    <h2>CART</h2>
-    <samp id="drawer-count">00 ITEMS</samp>
-    <button class="drawer__close" type="button" id="drawer-close" aria-label="Close cart">[ X ]</button>
-  </div>
-  <ul class="drawer__list" id="drawer-list"></ul>
-  <div class="drawer__foot">
-    <div class="drawer__total"><samp>TOTAL / INCL. NOTHING</samp><b id="drawer-total">€0</b></div>
-    <button class="btn btn--buy drawer__checkout" type="button" id="checkout">CHECKOUT &gt;&gt;&gt;</button>
-    <output id="checkout-out"></output>
-  </div>
-</aside>
-
-<script type="module" src="main.js"></script>
+<script type="module" src="js/home.js"></script>
 </body>
 </html>

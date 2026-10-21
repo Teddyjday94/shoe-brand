@@ -2,10 +2,22 @@
 
 A mock-up sneaker brand site in an industrial-brutalist style. Three.js, no build step.
 
-- Scroll-driven 3D inspection of the shoe with hotspot callouts, drag to rotate, X-ray wireframe
-- Three colorways from the model's `KHR_materials_variants`
-- Live 1-bit "CCTV" feed rendered from the same scene
-- Inventory cards with product shots rendered from the 3D model at load, size pickers and a cart drawer (nothing is sold — it's a mock-up)
+| Page | What's on it |
+| --- | --- |
+| `index.html` | Scroll-driven 3D inspection with hotspot callouts, drag to rotate, X-ray, colorway + size + reserve. `?v=1` opens a colorway. |
+| `shop.html` | Three colorways with size pickers, shipping / returns / sizing |
+| `lab.html` | Live render of the shoe on a pallet in a loading dock, three switchable security cameras, spec sheet |
+| `rules.html` | The four rules + FAQ |
+
+The cart lives in `localStorage`, so it follows you between pages. Nothing is sold — it's a mock-up.
+
+## Code
+
+- `js/ui.js` — shared on every page: cart + drawer, size picker, cursor, reveals
+- `js/data.js` — products, prices, stock, sizes
+- `js/shoe.js` — loads and normalises the 3D model, colorway switching
+- `js/home.js`, `js/shop.js`, `js/lab.js` — one per page
+- `assets/mk1-*.png` — product shots rendered from the 3D model
 
 ## Run
 

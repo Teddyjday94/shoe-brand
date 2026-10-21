@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SLAB® Shop</title>
+<meta name="description" content="SLAB® MK-1 — three colorways, batch 004. Reserve a pair.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=EB+Garamond:ital@1&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="bar">
+  <a class="bar__logo" href="index.html">SLAB<sup>®</sup></a>
+  <nav class="bar__nav" aria-label="Main">
+    <a href="index.html">[ INSPECT ]</a>
+    <a href="shop.html" aria-current="page">[ SHOP ]</a>
+    <a href="lab.html">[ LAB ]</a>
+    <a href="rules.html">[ RULES ]</a>
+  </nav>
+  <button class="bar__cart" type="button" aria-controls="drawer" aria-expanded="false">CART <output id="cart-count">00</output></button>
+</header>
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker__track">
+    <span>DROP 004 /// NOT AVAILABLE IN STORES /// NO RESTOCK /// POURED IN BATCHES OF 400 /// SIZES EU 38—46 /// DO NOT MACHINE WASH /// </span>
+    <span>DROP 004 /// NOT AVAILABLE IN STORES /// NO RESTOCK /// POURED IN BATCHES OF 400 /// SIZES EU 38—46 /// DO NOT MACHINE WASH /// </span>
+  </div>
+</div>
+
+<main>
+  <section class="pagehead">
+    <div class="pagehead__meta"><samp>[ 02 / SHOP ]</samp><samp>3 UNITS / <span class="red">BATCH 004 OF 004</span></samp></div>
+    <h1 class="pagehead__title">SHOP</h1>
+    <p class="pagehead__copy">One shoe in three finishes. Reserve a pair, collect it from Dock B. It is a mock-up, so you will be waiting a while.</p>
+  </section>
+
+  <section class="inventory" aria-label="Products">
+    <div class="grid" id="products"></div>
+  </section>
+
+  <div class="stripes" aria-hidden="true"></div>
+
+  <section class="info" aria-label="Shipping and returns">
+    <div class="info__cell">
+      <samp class="kicker">[ 01 / SHIPPING ]</samp>
+      <h2 class="info__title">IN A BOX THAT IS ALSO A BRICK.</h2>
+      <p>Ships in 3—5 days, flat-rate, everywhere a lorry can reach. Signature required. The box is load-bearing.</p>
+    </div>
+    <div class="info__cell">
+      <samp class="kicker">[ 02 / RETURNS ]</samp>
+      <h2 class="info__title">30 DAYS. <s>NO QUESTIONS.</s> ONE QUESTION.</h2>
+      <p>Unworn, in the brick. We will ask why. You do not have to answer, but we will ask.</p>
+    </div>
+    <div class="info__cell">
+      <samp class="kicker">[ 03 / SIZING ]</samp>
+      <h2 class="info__title">TRUE TO SIZE. HALF UP IF WIDE.</h2>
+      <p>The toe box is cut generous; the heel cup is not. Between sizes, go up. Your heel will thank you around week three.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="foot__mega" aria-hidden="true">SLAB<sup>®</sup></div>
+  <nav class="foot__nav" aria-label="Footer">
+    <a href="index.html">01 / INSPECT</a><a href="shop.html">02 / SHOP</a><a href="lab.html">03 / LAB</a><a href="rules.html">04 / RULES</a>
+  </nav>
+  <form class="signup" id="signup">
+    <label for="email"><samp>DROP 005 NOTICE — ENTER EMAIL</samp></label>
+    <div class="signup__row">
+      <input id="email" type="email" required placeholder="YOU@SOMEWHERE.COM" autocomplete="email">
+      <button type="submit" aria-label="Sign up">&gt;&gt;&gt;</button>
+    </div>
+    <output id="signup-out"></output>
+  </form>
+  <div class="barcode" aria-hidden="true"></div>
+  <div class="foot__meta">
+    <samp>© 2026 SLAB FOOTWEAR (FICTIONAL). A MOCK-UP.</samp>
+    <samp>3D MODEL: “MATERIALSVARIANTSSHOE” © SHOPIFY, CC-BY 4.0, VIA KHRONOS GLTF-SAMPLE-ASSETS.</samp>
+    <samp>NO COOKIES. NO TRACKING. NO DISCOUNT CODES.</samp>
+  </div>
+</footer>
+
+<script type="module" src="js/shop.js"></script>
+</body>
+</html>

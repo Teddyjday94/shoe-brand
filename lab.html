@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SLAB® Lab</title>
+<meta name="description" content="SLAB® MK-1 spec sheet and live feed from Dock B.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=EB+Garamond:ital@1&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+
+<header class="bar">
+  <a class="bar__logo" href="index.html">SLAB<sup>®</sup></a>
+  <nav class="bar__nav" aria-label="Main">
+    <a href="index.html">[ INSPECT ]</a>
+    <a href="shop.html">[ SHOP ]</a>
+    <a href="lab.html" aria-current="page">[ LAB ]</a>
+    <a href="rules.html">[ RULES ]</a>
+  </nav>
+  <button class="bar__cart" type="button" aria-controls="drawer" aria-expanded="false">CART <output id="cart-count">00</output></button>
+</header>
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker__track">
+    <span>DOCK B /// LIVE /// CAM 01—03 /// NO SHOES LEAVE UNSCANNED /// PALLET 4 /// BATCH 004 /// </span>
+    <span>DOCK B /// LIVE /// CAM 01—03 /// NO SHOES LEAVE UNSCANNED /// PALLET 4 /// BATCH 004 /// </span>
+  </div>
+</div>
+
+<main>
+  <section class="pagehead pagehead--dark">
+    <div class="pagehead__meta"><samp>[ 03 / LAB ]</samp><samp>FEED <span class="live">● LIVE</span></samp></div>
+    <h1 class="pagehead__title">LAB</h1>
+    <p class="pagehead__copy">The pair on pallet 4, watched by three cameras. Switch feeds, switch the colorway. Then read the spec sheet underneath.</p>
+  </section>
+
+  <!-- ─── LIVE FEED: real-time render of the loading dock ─── -->
+  <section class="feedwrap">
+    <div class="cctv">
+      <canvas id="cctv" aria-label="Live security-camera view of the MK-1 sneaker on a pallet in Dock B"></canvas>
+      <div class="cctv__hud" aria-hidden="true">
+        <samp class="cctv__tl"><span class="rec">● REC</span> <span id="cam-id">CAM 01</span></samp>
+        <samp class="cctv__tr" id="cctv-time">0000-00-00 00:00:00</samp>
+        <samp class="cctv__bl" id="cam-label">PALLET 4 / CLOSE</samp>
+        <samp class="cctv__br" id="feed-variant">MK-1 / MIDNIGHT</samp>
+      </div>
+      <div class="cctv__wait" id="cctv-wait"><samp>ACQUIRING SIGNAL</samp><b>000%</b></div>
+      <div class="cctv__cut" aria-hidden="true"><samp>SWITCHING</samp></div>
+    </div>
+    <aside class="feedctl">
+      <p class="kicker">[ DOCK B / PALLET 4 ]</p>
+      <h2 class="feedctl__title">THREE CAMERAS.<br>ONE SHOE.</h2>
+      <p class="feedctl__copy">Rendered live in your browser. Same mesh as the inspection, sat on a pallet next to its box.</p>
+      <div class="feedctl__group">
+        <samp>SOURCE</samp>
+        <div class="cams" id="cams"></div>
+      </div>
+      <div class="feedctl__group">
+        <samp>COLORWAY</samp>
+        <div class="variants__row" id="feed-variants"></div>
+      </div>
+      <a class="btn btn--buy feedctl__cta" href="shop.html">RESERVE A PAIR &gt;&gt;&gt;</a>
+    </aside>
+  </section>
+
+  <div class="stripes" aria-hidden="true"></div>
+
+  <!-- ─── SPEC SHEET ─── -->
+  <section class="spec">
+    <div class="spec__img halftone">
+      <img src="assets/flash.jpg" alt="SLAB MK-1 in bone colorway photographed with direct flash on cracked concrete" loading="lazy">
+      <samp class="tag">FIG. 1 — FOUND ON SITE, 02:14</samp>
+    </div>
+    <div class="spec__body">
+      <p class="kicker">[ SPEC SHEET / MK-1 ]</p>
+      <h2 class="h2">BUILT LIKE<br>A CAR PARK.</h2>
+      <p class="serif">“It is not comfortable. It is correct.”</p>
+      <table class="table">
+        <tbody>
+          <tr><th>01</th><td>UPPER</td><td>SUEDE / 600D MESH / TPU CAGE</td></tr>
+          <tr><th>02</th><td>MIDSOLE</td><td>EVA, 38MM STACK, POURED</td></tr>
+          <tr><th>03</th><td>OUTSOLE</td><td>RUBBER, 4MM LUG, HAZARD</td></tr>
+          <tr><th>04</th><td>LACES</td><td>FLAT, WAXED, 140CM</td></tr>
+          <tr><th>05</th><td>WEIGHT</td><td><data value="412">412 G</data> (EU 42)</td></tr>
+          <tr><th>06</th><td>DROP</td><td><data value="10">10 MM</data></td></tr>
+          <tr><th>07</th><td>WARRANTY</td><td><s>LIFETIME</s> UNTIL IT BREAKS</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="foot__mega" aria-hidden="true">SLAB<sup>®</sup></div>
+  <nav class="foot__nav" aria-label="Footer">
+    <a href="index.html">01 / INSPECT</a><a href="shop.html">02 / SHOP</a><a href="lab.html">03 / LAB</a><a href="rules.html">04 / RULES</a>
+  </nav>
+  <form class="signup" id="signup">
+    <label for="email"><samp>DROP 005 NOTICE — ENTER EMAIL</samp></label>
+    <div class="signup__row">
+      <input id="email" type="email" required placeholder="YOU@SOMEWHERE.COM" autocomplete="email">
+      <button type="submit" aria-label="Sign up">&gt;&gt;&gt;</button>
+    </div>
+    <output id="signup-out"></output>
+  </form>
+  <div class="barcode" aria-hidden="true"></div>
+  <div class="foot__meta">
+    <samp>© 2026 SLAB FOOTWEAR (FICTIONAL). A MOCK-UP.</samp>
+    <samp>3D MODEL: “MATERIALSVARIANTSSHOE” © SHOPIFY, CC-BY 4.0, VIA KHRONOS GLTF-SAMPLE-ASSETS.</samp>
+    <samp>NO COOKIES. NO TRACKING. NO DISCOUNT CODES.</samp>
+  </div>
+</footer>
+
+<script type="module" src="js/lab.js"></script>
+</body>
+</html>

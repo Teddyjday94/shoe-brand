@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SLAB® Rules</title>
+<meta name="description" content="The four SLAB® rules, and the answers to the questions people keep asking.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=EB+Garamond:ital@1&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="bar">
+  <a class="bar__logo" href="index.html">SLAB<sup>®</sup></a>
+  <nav class="bar__nav" aria-label="Main">
+    <a href="index.html">[ INSPECT ]</a>
+    <a href="shop.html">[ SHOP ]</a>
+    <a href="lab.html">[ LAB ]</a>
+    <a href="rules.html" aria-current="page">[ RULES ]</a>
+  </nav>
+  <button class="bar__cart" type="button" aria-controls="drawer" aria-expanded="false">CART <output id="cart-count">00</output></button>
+</header>
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker__track">
+    <span>RULE 01 /// RULE 02 /// RULE 03 /// RULE 04 /// THERE IS NO RULE 05 /// </span>
+    <span>RULE 01 /// RULE 02 /// RULE 03 /// RULE 04 /// THERE IS NO RULE 05 /// </span>
+  </div>
+</div>
+
+<main>
+  <section class="pagehead pagehead--red">
+    <div class="pagehead__meta"><samp>[ 04 / RULES ]</samp><samp>REV. 2026</samp></div>
+    <h1 class="pagehead__title">RULES</h1>
+    <p class="pagehead__copy">Written on the wall of the factory in marker pen. Copied here so you don't have to visit.</p>
+  </section>
+
+  <section class="manifesto" aria-label="The rules">
+    <ol>
+      <li><span>01</span>COMFORT IS NOT <s>A FEELING</s> A SPEC.</li>
+      <li><span>02</span>NO ATHLETES. <s>NO AMBASSADORS.</s> NO.</li>
+      <li><span>03</span>IF IT SQUEAKS, IT'S WORKING.</li>
+      <li><span>04</span>WE MAKE ONE SHOE. <s>BADLY.</s> ON PURPOSE.</li>
+    </ol>
+  </section>
+
+  <section class="about">
+    <figure class="about__img halftone halftone--dark">
+      <img src="assets/stairs.jpg" alt="Grainy black and white photo of worn sneakers on a skateboard on concrete stairs" loading="lazy">
+      <figcaption><samp>FIG. 2 — FIELD TEST, STAIRWELL C. 3 MONTHS. 0 RETURNS.</samp></figcaption>
+    </figure>
+    <div class="about__body">
+      <p class="kicker">[ QUESTIONS PEOPLE KEEP ASKING ]</p>
+      <dl class="faq">
+        <div data-reveal><dt>WHY ONLY ONE SHOE?</dt><dd>Because the second one would be worse. We would rather make the first one again, slightly better, four hundred times.</dd></div>
+        <div data-reveal><dt>IS IT FOR RUNNING?</dt><dd>It is for walking to the place where other people are running. It will survive the walk back.</dd></div>
+        <div data-reveal><dt>WHY DOES IT SQUEAK?</dt><dd>See rule 03. The squeak goes away around week six. We miss it when it does.</dd></div>
+        <div data-reveal><dt>WHERE IS IT MADE?</dt><dd>In a building with a loading dock, labelled B. You can watch it on the <a href="lab.html">LAB</a> page.</dd></div>
+        <div data-reveal><dt>CAN I BUY ONE?</dt><dd>No. This is a mock-up. But you can reserve one in the <a href="shop.html">SHOP</a> and feel something.</dd></div>
+      </dl>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="foot__mega" aria-hidden="true">SLAB<sup>®</sup></div>
+  <nav class="foot__nav" aria-label="Footer">
+    <a href="index.html">01 / INSPECT</a><a href="shop.html">02 / SHOP</a><a href="lab.html">03 / LAB</a><a href="rules.html">04 / RULES</a>
+  </nav>
+  <form class="signup" id="signup">
+    <label for="email"><samp>DROP 005 NOTICE — ENTER EMAIL</samp></label>
+    <div class="signup__row">
+      <input id="email" type="email" required placeholder="YOU@SOMEWHERE.COM" autocomplete="email">
+      <button type="submit" aria-label="Sign up">&gt;&gt;&gt;</button>
+    </div>
+    <output id="signup-out"></output>
+  </form>
+  <div class="barcode" aria-hidden="true"></div>
+  <div class="foot__meta">
+    <samp>© 2026 SLAB FOOTWEAR (FICTIONAL). A MOCK-UP.</samp>
+    <samp>3D MODEL: “MATERIALSVARIANTSSHOE” © SHOPIFY, CC-BY 4.0, VIA KHRONOS GLTF-SAMPLE-ASSETS.</samp>
+    <samp>NO COOKIES. NO TRACKING. NO DISCOUNT CODES.</samp>
+  </div>
+</footer>
+
+<script type="module" src="js/ui.js"></script>
+</body>
+</html>
