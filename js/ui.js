@@ -126,11 +126,17 @@ addEventListener('storage', (e) => {
 renderCart();
 
 /* ── decoration: grain + crosshair cursor ── */
+{
+  // generate the paper grain once as a small tile instead of running an SVG filter live
+  const n = document.createElement('canvas');
+  n.width = n.height = 160;
+  const g = n.getContext('2d'), img = g.createImageData(160, 160);
+  for (let i = 0; i < img.data.length; i += 4) img.data[i + 3] = Math.random() * 26;
+  g.putImageData(img, 0, 0);
+  document.documentElement.style.setProperty('--grain', `url(${n.toDataURL()})`);
+}
 document.body.insertAdjacentHTML('afterbegin', `
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0"/></filter>
-</svg>
-<div class="grain" aria-hidden="true"><svg width="100%" height="100%"><rect width="100%" height="100%" filter="url(#grain)"/></svg></div>
+<div class="grain" aria-hidden="true"></div>
 <div class="cursor" aria-hidden="true"><span class="cursor__x"></span><span class="cursor__y"></span><samp class="cursor__label"></samp></div>`);
 
 const cur = $('.cursor');

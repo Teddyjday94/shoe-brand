@@ -49,7 +49,9 @@ const meshLine = loader.log('FETCHING MESH / 7.8 MB', '...');
 /* ── renderer / scene ── */
 const canvas = $('#gl');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+// phones have 3x screens; 1.5x keeps the shadowed render at full frame rate while scrolling
+const coarse = matchMedia('(pointer: coarse)').matches;
+renderer.setPixelRatio(Math.min(devicePixelRatio, coarse ? 1.5 : 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.shadowMap.enabled = true;
 
@@ -163,23 +165,24 @@ function buildHotspots() {
   });
 }
 const tmp = new THREE.Vector3();
+// canvas box relative to the stage — measured on resize, never per frame (avoids forced layout)
+const box = { x: 0, y: 0, w: 1, h: 1 };
 function updateHotspots(stepNow, frameNo) {
   if (!spots.length) return;
-  const cr = canvas.getBoundingClientRect(), sr = canvas.parentElement.getBoundingClientRect();
   const rolled = Math.abs(pivot.rotation.x) > 0.3;
   spots.forEach((s) => {
     tmp.copy(s.local);
     pivot.localToWorld(tmp);
     // occlusion check every few frames: anything between camera and the point?
-    if (frameNo % 4 === 0) {
+    if (frameNo % 6 === 0) {
       const dist = tmp.distanceTo(camera.position);
       ray.set(camera.position, tmp.clone().sub(camera.position).normalize());
       const hit = ray.intersectObject(model.root, true)[0];
       s.hidden = rolled || (hit && hit.distance < dist - 0.06);
     }
     const p = tmp.clone().project(camera);
-    const x = (p.x * 0.5 + 0.5) * cr.width + (cr.left - sr.left);
-    const y = (-p.y * 0.5 + 0.5) * cr.height + (cr.top - sr.top);
+    const x = (p.x * 0.5 + 0.5) * box.w + box.x;
+    const y = (-p.y * 0.5 + 0.5) * box.h + box.y;
     s.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
     s.el.classList.toggle('is-hidden', s.hidden || p.z > 1);
     s.el.classList.toggle('is-active', s.step === stepNow);
@@ -187,29 +190,50 @@ function updateHotspots(stepNow, frameNo) {
   });
 }
 
-/* ── drag to rotate (adds to scroll yaw, with inertia) ── */
-let dragYaw = 0, dragVel = 0, dragging = false, lastX = 0;
-canvas.addEventListener('pointerdown', (e) => { dragging = true; lastX = e.clientX; canvas.setPointerCapture(e.pointerId); });
+/* ── drag to rotate (adds to scroll yaw, with inertia) ──
+   Touch only counts as a drag once the finger is clearly moving sideways,
+   so a vertical scroll that starts on the shoe doesn't spin it. */
+let dragYaw = 0, dragVel = 0, dragging = false, pending = null, lastX = 0;
+canvas.addEventListener('pointerdown', (e) => {
+  dragVel = 0;
+  if (e.pointerType === 'touch') { pending = { id: e.pointerId, x: e.clientX, y: e.clientY }; return; }
+  dragging = true; lastX = e.clientX; canvas.setPointerCapture(e.pointerId);
+});
 canvas.addEventListener('pointermove', (e) => {
+  if (pending && e.pointerId === pending.id) {
+    const dx = e.clientX - pending.x, dy = e.clientY - pending.y;
+    if (Math.abs(dy) > 8) { pending = null; return; }            // it's a scroll
+    if (Math.abs(dx) > 10) { pending = null; dragging = true; lastX = e.clientX; }
+    else return;
+  }
   if (!dragging) return;
   const dx = (e.clientX - lastX) * 0.008;
   dragYaw += dx; dragVel = dx; lastX = e.clientX;
 });
-const endDrag = () => { dragging = false; };
+const endDrag = () => { dragging = false; pending = null; };
 canvas.addEventListener('pointerup', endDrag);
-canvas.addEventListener('pointercancel', endDrag);
+canvas.addEventListener('pointercancel', () => { endDrag(); dragVel = 0; }); // browser took the gesture for scrolling
 
-/* ── scroll progress through the inspection section ── */
-const section = $('#inspect');
-let progress = 0, stepShown = -1;
+/* ── scroll progress through the inspection section ──
+   Measured from cached offsets + scrollY (no layout reads on scroll), and against the
+   sticky stage's own height rather than innerHeight, which jumps when mobile toolbars collapse. */
+const section = $('#inspect'), stage = $('.stage');
+const range = { top: 0, len: 1, stick: 0 };
+let progress = 0, smooth = 0, stepShown = -1;
+function measure() {
+  range.stick = parseFloat(getComputedStyle(stage).top) || 0;
+  range.top = section.offsetTop;
+  range.len = Math.max(1, section.offsetHeight - stage.offsetHeight);
+  const cr = canvas.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+  Object.assign(box, { x: cr.left - sr.left, y: cr.top - sr.top, w: cr.width, h: cr.height });
+}
 function readScroll() {
-  const r = section.getBoundingClientRect();
-  progress = clamp(-r.top / (r.height - innerHeight), 0, 1);
+  progress = clamp((scrollY + range.stick - range.top) / range.len, 0, 1);
 }
 addEventListener('scroll', readScroll, { passive: true });
 
 function scrollToStep(i) {
-  const top = section.offsetTop + (section.offsetHeight - innerHeight) * (i / (STEPS.length - 1));
+  const top = range.top - range.stick + range.len * (i / (STEPS.length - 1));
   scrollTo({ top: top + 1, behavior: 'smooth' });
 }
 
@@ -233,32 +257,48 @@ function resize() {
   // pull back on narrow/tall viewports so the shoe fits
   camera.zoom = camera.aspect < 1 ? 0.62 : 1;
   camera.updateProjectionMatrix();
+  measure();
+  readScroll();
 }
 new ResizeObserver(resize).observe(canvas);
+new ResizeObserver(() => { measure(); readScroll(); }).observe(document.body);
 
 /* ── loop ── */
 const v3 = (a) => new THREE.Vector3(...a);
-const look = new THREE.Vector3();
-let frames = 0, fpsT = performance.now(), frameNo = 0, stageVisible = true;
+const look = new THREE.Vector3(...STEPS[0].look);
+const progressBar = $('#progress-bar');
+const tele = { x: $('#t-x'), y: $('#t-y'), z: $('#t-z'), yaw: $('#t-yaw') };
+let frames = 0, fpsT = performance.now(), frameNo = 0, stageVisible = true, lastT = performance.now();
 new IntersectionObserver(([e]) => { stageVisible = e.isIntersecting; }).observe(canvas);
+const teleOn = () => $('.tele').offsetParent !== null; // hidden on phones: skip its DOM writes
+let showTele = true;
 
 function frame(t) {
   requestAnimationFrame(frame);
   frameNo++;
+  // frame-rate independent damping, so 60Hz and 120Hz screens feel the same
+  const dt = Math.min((t - lastT) / 1000, 0.1);
+  lastT = t;
   if (!stageVisible) return;
 
-  const f = progress * (STEPS.length - 1);
+  // glide toward the scroll position instead of following each (uneven) scroll event
+  smooth += (progress - smooth) * (1 - Math.exp(-dt * 7));
+  if (Math.abs(progress - smooth) < 1e-4) smooth = progress;
+
+  const f = smooth * (STEPS.length - 1);
   const i = Math.min(Math.floor(f), STEPS.length - 2);
-  const k = ease(clamp(f - i, 0, 1));
+  const u = clamp(f - i, 0, 1);
+  const k = lerp(u, ease(u), 0.5); // half-eased: moves the whole way, no parking at each step
   const A = STEPS[i], B = STEPS[i + 1];
   const stepNow = Math.round(f);
   showStep(stepNow);
 
-  camera.position.lerp(v3(A.cam).lerp(v3(B.cam), k), 0.12);
-  look.lerp(v3(A.look).lerp(v3(B.look), k), 0.12);
+  const follow = 1 - Math.exp(-dt * 10);
+  camera.position.lerp(v3(A.cam).lerp(v3(B.cam), k), follow);
+  look.lerp(v3(A.look).lerp(v3(B.look), k), follow);
   camera.lookAt(look);
 
-  if (!dragging) { dragYaw += dragVel; dragVel *= 0.94; }
+  if (!dragging) { dragYaw += dragVel * dt * 60; dragVel *= Math.exp(-dt * 3.7); }
   const idle = Math.sin(t * 0.0004) * 0.06;
   pivot.rotation.y = lerp(A.yaw, B.yaw, k) + dragYaw + idle;
   pivot.rotation.x = lerp(A.roll, B.roll, k);
@@ -269,11 +309,14 @@ function frame(t) {
   pivot.updateMatrixWorld(true);
   updateHotspots(stepNow, frameNo);
 
-  $('#progress-bar').style.width = (progress * 100).toFixed(1) + '%';
-  $('#t-x').textContent = camera.position.x.toFixed(2);
-  $('#t-y').textContent = camera.position.y.toFixed(2);
-  $('#t-z').textContent = camera.position.z.toFixed(2);
-  $('#t-yaw').textContent = pad(((THREE.MathUtils.radToDeg(pivot.rotation.y) % 360) + 360) % 360 | 0, 3) + '°';
+  progressBar.style.transform = `scaleX(${smooth.toFixed(4)})`;
+  if (frameNo % 30 === 0) showTele = teleOn();
+  if (showTele && frameNo % 4 === 0) {
+    tele.x.textContent = camera.position.x.toFixed(2);
+    tele.y.textContent = camera.position.y.toFixed(2);
+    tele.z.textContent = camera.position.z.toFixed(2);
+    tele.yaw.textContent = pad(((THREE.MathUtils.radToDeg(pivot.rotation.y) % 360) + 360) % 360 | 0, 3) + '°';
+  }
   frames++;
   if (t - fpsT > 500) {
     const fps = Math.round((frames * 1000) / (t - fpsT));
@@ -283,5 +326,7 @@ function frame(t) {
     frames = 0; fpsT = t;
   }
 }
+measure();
 readScroll();
+smooth = progress; // landing mid-section (reload, back button) shouldn't fly in from step 1
 requestAnimationFrame(frame);

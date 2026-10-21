@@ -31,7 +31,8 @@ s { text-decoration-color: var(--red); text-decoration-thickness: .14em; }
 .red { color: var(--red); }
 
 /* ── texture ── */
-.grain { position: fixed; inset: 0; pointer-events: none; z-index: 90; opacity: .22; mix-blend-mode: multiply; }
+/* a tiled noise image on its own compositor layer: costs nothing to scroll (a live SVG filter + blend mode repaints every frame) */
+.grain { position: fixed; inset: 0; pointer-events: none; z-index: 90; background-image: var(--grain); background-size: 160px 160px; transform: translateZ(0); }
 
 /* ── cursor ── */
 .cursor { position: fixed; inset: 0; pointer-events: none; z-index: 300; display: none; opacity: 0; }
@@ -112,7 +113,7 @@ s { text-decoration-color: var(--red); text-decoration-thickness: .14em; }
 .readout__head { display: flex; justify-content: space-between; }
 .readout__head b { color: var(--red); }
 .readout__progress { padding: 0; height: 10px; background: var(--paper); }
-.readout__progress i { display: block; height: 100%; width: 0; background: var(--ink); }
+.readout__progress i { display: block; height: 100%; width: 100%; background: var(--ink); transform: scaleX(0); transform-origin: 0 50%; }
 .readout__title { font-family: var(--heavy); font-weight: 400; font-size: 40px; line-height: .9; letter-spacing: -.04em; }
 .readout__copy { text-transform: none; letter-spacing: .01em; font-size: 13px; min-height: 5.4em; }
 .buy { display: grid; gap: 12px; margin-top: auto !important; border-bottom: 0 !important; border-top: var(--line); background: var(--paper); }
