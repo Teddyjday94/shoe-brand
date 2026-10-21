@@ -27,6 +27,10 @@ node server.mjs
 
 Then open http://localhost:5173. Needs Node 18+. Three.js and fonts load from CDNs.
 
+## Deploy
+
+Static files, no build. Pushes to `main` deploy to production on Vercel: https://shoe-brand-amber.vercel.app
+
 ## Credits
 
 - 3D model: "MaterialsVariantsShoe" © Shopify, [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/), via [Khronos glTF-Sample-Assets](https://github.com/KhronosGroup/glTF-Sample-Assets)
