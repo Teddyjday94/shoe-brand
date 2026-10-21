@@ -19,6 +19,86 @@ const TINT_GLSL = (v) => `
     ${v} = max(mat3(1.0, 1.0, 1.0, 0.956, -0.272, -1.106, 0.621, -0.647, 1.703) * yiq * uTintLight, 0.0);
   }`;
 
+/* ── detail pass for models that ship with only a colour texture ──
+   Derives the maps they're missing from that texture, once, at load:
+   - normal map from luminance (Sobel), so printed panels and seams catch light
+   - roughness map: matte body, glossier on bright saturated trims
+   - emissive mask: the bright, saturated piping glows */
+const DETAIL_SIZE = 1024;
+function deriveMaps(image, { bump = 1.5, roughness = 0.6, glow = 0 }) {
+  const N = DETAIL_SIZE;
+  const c = document.createElement('canvas');
+  c.width = c.height = N;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(image, 0, 0, N, N);
+  const src = g.getImageData(0, 0, N, N).data;
+
+  const lum = new Float32Array(N * N), sat = new Float32Array(N * N), val = new Float32Array(N * N);
+  for (let i = 0, p = 0; i < N * N; i++, p += 4) {
+    const r = src[p] / 255, gg = src[p + 1] / 255, b = src[p + 2] / 255;
+    const mx = Math.max(r, gg, b), mn = Math.min(r, gg, b);
+    lum[i] = 0.299 * r + 0.587 * gg + 0.114 * b;
+    val[i] = mx;
+    sat[i] = mx > 0 ? (mx - mn) / mx : 0;
+  }
+
+  const make = () => { const d = g.createImageData(N, N); return d; };
+  const nrm = make(), rgh = make(), emi = make();
+  const at = (x, y) => lum[((y + N) % N) * N + ((x + N) % N)];
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      const i = y * N + x, p = i * 4;
+      // Sobel gradient of luminance as height
+      const dx = (at(x + 1, y - 1) + 2 * at(x + 1, y) + at(x + 1, y + 1)) - (at(x - 1, y - 1) + 2 * at(x - 1, y) + at(x - 1, y + 1));
+      const dy = (at(x - 1, y + 1) + 2 * at(x, y + 1) + at(x + 1, y + 1)) - (at(x - 1, y - 1) + 2 * at(x, y - 1) + at(x + 1, y - 1));
+      let nx = -dx * bump, ny = -dy * bump, nz = 1;
+      const inv = 1 / Math.hypot(nx, ny, nz);
+      nrm.data[p] = (nx * inv * 0.5 + 0.5) * 255;
+      nrm.data[p + 1] = (ny * inv * 0.5 + 0.5) * 255;
+      nrm.data[p + 2] = (nz * inv * 0.5 + 0.5) * 255;
+      nrm.data[p + 3] = 255;
+
+      const trim = Math.min(1, Math.max(0, (sat[i] * val[i] - 0.35) * 3)); // bright + saturated
+      const grain = (Math.random() - 0.5) * 0.06;                         // micro-variation
+      const r = Math.min(1, Math.max(0.08, roughness - trim * 0.35 + (0.5 - lum[i]) * 0.12 + grain));
+      rgh.data[p] = rgh.data[p + 1] = rgh.data[p + 2] = r * 255;
+      rgh.data[p + 3] = 255;
+
+      const e = glow ? trim : 0;
+      emi.data[p] = src[p] * e; emi.data[p + 1] = src[p + 1] * e; emi.data[p + 2] = src[p + 2] * e;
+      emi.data[p + 3] = 255;
+    }
+  }
+
+  const toTex = (data, srgb) => {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = N;
+    cv.getContext('2d').putImageData(data, 0, 0);
+    const t = new THREE.CanvasTexture(cv);
+    t.flipY = false; // glTF texture convention
+    t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+    t.anisotropy = 8;
+    return t;
+  };
+  return { normal: toTex(nrm), rough: toTex(rgh), emissive: glow ? toTex(emi, true) : null };
+}
+
+function addDetail(material, detail) {
+  if (!material.map || material.normalMap || !material.map.image) return;
+  const maps = deriveMaps(material.map.image, detail);
+  material.normalMap = maps.normal;
+  material.normalScale.set(1, -1); // glTF's green-channel convention
+  material.roughnessMap = maps.rough;
+  material.roughness = 1;
+  material.metalness = 0;
+  if (maps.emissive) {
+    material.emissiveMap = maps.emissive;
+    material.emissive.set(0xffffff);
+    material.emissiveIntensity = detail.glow;
+  }
+  material.needsUpdate = true;
+}
+
 function addTint(material, uniforms) {
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
@@ -62,6 +142,9 @@ export function loadShoe(shoeDef, onProgress = () => {}) {
       shoe.traverse((o) => {
         if (!o.isMesh) return;
         o.castShadow = true;
+        // sharper textures at grazing angles (most of what a scroll-past camera sees)
+        Object.values(o.material).forEach((v) => { if (v?.isTexture) v.anisotropy = 8; });
+        if (shoeDef.detail) addDetail(o.material, shoeDef.detail);
         if (!hasVariants) addTint(o.material, tint);
         o.userData.mat = o.material;
         tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;

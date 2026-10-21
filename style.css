@@ -480,6 +480,7 @@ s { text-decoration-color: var(--red); text-decoration-thickness: .14em; }
   .buy__price b { font-size: 26px; }
   .buy .btn--buy { padding: 10px 12px; }
   .spot span { font-size: 9px; }
+  .spot.is-overview span { display: none; } /* four labels don't fit on a phone: numbers only until a step is active */
   .manifesto li { font-size: 8.4vw; }
   .stage__corner--bl { display: none; }
   .spec { grid-template-columns: 1fr; }

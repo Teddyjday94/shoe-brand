@@ -71,9 +71,13 @@ camera.position.set(...STEPS[0].cam);
 const flash = new THREE.DirectionalLight(0xffffff, 2.6);
 flash.position.set(2.5, 6, 3);
 flash.castShadow = true;
-flash.shadow.mapSize.set(1024, 1024);
+flash.shadow.mapSize.setScalar(coarse ? 1024 : 2048);
+flash.shadow.bias = -0.0003;
 Object.assign(flash.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 0.5, far: 20 });
-scene.add(flash, new THREE.AmbientLight(0xffffff, 0.25));
+// cool rim from behind: pulls the silhouette off the paper and shows surface relief
+const rim = new THREE.DirectionalLight(0xdfe8ff, 1.3);
+rim.position.set(-4, 3.5, -4.5);
+scene.add(flash, rim, new THREE.AmbientLight(0xffffff, 0.25));
 
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.ShadowMaterial({ opacity: 0.85, color: 0x0d0d0d }));
 floor.rotation.x = -Math.PI / 2;

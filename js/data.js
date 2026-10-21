@@ -23,6 +23,7 @@ export const SHOES = [
   {
     id: 'hi1', name: 'HI-1', type: 'MID-TOP COURT', file: 'assets/hi1.glb', bytes: 6343172,
     flip: true, // the auto toe/heel check misreads a high collar
+    detail: { bump: 2.2, roughness: 0.55, glow: 0.35 }, // ships with colour only: derive relief, roughness, glow
 
     blurb: 'Collar up to the ankle bone. Built for courts, car parks and anywhere you land hard.',
     credit: '“Sneaker” by ShaderSculptor, generated with Sloyd, CC-BY 4.0',
@@ -41,6 +42,7 @@ export const SHOES = [
   },
   {
     id: 'trk1', name: 'TRK-1', type: 'CHUNKY TRAINER', file: 'assets/trk1.glb', bytes: 5642576,
+    detail: { bump: 2.4, roughness: 0.72, glow: 0.9 },
     blurb: 'Too much shoe, on purpose. A stacked sole and reflective piping for walking home at 3am.',
     credit: '“A sleek, edgy sneaker with angular shapes, neon colors” by PurpleShade3D, generated with Sloyd, CC-BY 4.0',
     steps: [

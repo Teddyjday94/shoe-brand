@@ -56,3 +56,5 @@ SHOES.forEach((shoe, n) => {
 // jump links: shop.html#hi1
 const jump = $('#jump');
 jump?.append(...SHOES.map((s) => Object.assign(document.createElement('a'), { href: `#${s.id}`, textContent: `[ ${s.name} ]` })));
+// sections are built here, after the browser already looked for the #anchor — so jump now
+if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'instant' });
