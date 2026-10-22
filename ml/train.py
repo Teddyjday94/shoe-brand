@@ -2,6 +2,7 @@
 
     ml/.venv/Scripts/python ml/train.py              # train
     ml/.venv/Scripts/python ml/train.py --export     # export best.pt -> assets/ml/foot.onnx
+    ml/.venv/Scripts/python ml/train.py --name foot2 --weights ml/runs/foot/weights/best.pt --epochs 30
 
 Data comes from ml/gen.html (synthetic) under ml/data/synth/{images,labels}/{train,val}.
 Keypoint order and meaning: ml/footspec.js.
@@ -38,14 +39,15 @@ def dataset_yaml(limit: int = 0) -> Path:
     return y
 
 
-def train(epochs: int, batch: int, resume: bool, limit: int, name: str, workers: int):
+def train(epochs: int, batch: int, resume: bool, limit: int, name: str, workers: int, weights: str):
     from ultralytics import YOLO
 
     if resume:
         model = YOLO(RUNS / name / "weights" / "last.pt")
         model.train(resume=True)
         return
-    model = YOLO(ML / "yolo11n-pose.pt")  # COCO body-pose pretraining transfers well to feet
+    # COCO body-pose pretraining transfers well to feet; --weights fine-tunes an earlier foot run
+    model = YOLO(weights or ML / "yolo11n-pose.pt")
     model.train(
         data=str(dataset_yaml(limit)),
         epochs=epochs,
@@ -89,5 +91,6 @@ if __name__ == "__main__":
     ap.add_argument("--limit", type=int, default=0, help="train on the first N images only (quick runs)")
     ap.add_argument("--name", default="foot", help="run name under ml/runs/")
     ap.add_argument("--workers", type=int, default=1, help="data loader processes (Windows paging-file limits)")
+    ap.add_argument("--weights", default="", help="start from these weights (e.g. ml/runs/foot/weights/best.pt)")
     a = ap.parse_args()
-    export(a.name) if a.export else train(a.epochs, a.batch, a.resume, a.limit, a.name, a.workers)
+    export(a.name) if a.export else train(a.epochs, a.batch, a.resume, a.limit, a.name, a.workers, a.weights)

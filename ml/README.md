@@ -37,11 +37,14 @@ Serves the repo on :5174 and accepts generated files into `ml/data/`.
 1. **Data:** open `http://localhost:5174/ml/gen.html?preview=16` and check the labelled sheet at `ml/data/preview.jpg`. Then generate:
    - `gen.html?split=train&start=0&count=12000&seed=101`
    - `gen.html?split=val&start=0&count=1000&seed=202`
+   - Round 2 added bare and socked feet, any phone roll and close-ups: `split=train&start=12000&count=8000&seed=101` and `split=val&start=1000&count=800&seed=202`. Bare/socked feet are labelled with the shoe template's keypoints, i.e. where the shoe would sit.
 2. **Train** on the local GPU (GTX 1080: PyTorch 2.7.1 cu126 build, which still supports Pascal):
 
    ```bash
    ml/.venv/Scripts/python ml/train.py --epochs 60
    ```
+
+   To fine-tune on new data from an earlier run: `--name foot2 --weights ml/runs/foot/weights/best.pt --epochs 30`. If Windows kills a run with error 1455 (paging file), `--resume --name <run>` picks it up again.
 3. **Export** to `assets/ml/foot.onnx`, which the live page loads:
 
    ```bash
@@ -62,4 +65,5 @@ Serves the repo on :5174 and accepts generated files into `ml/data/`.
 
 - Trained on synthetic renders of the three SLAB shoes with randomised textures, legs, floors and lighting, so real-world accuracy depends on how well that transfers. Real labelled photos would be the next step.
 - It covers the user's real shoe with a slightly oversized virtual one. It doesn't erase the real shoe.
+- WebGPU hangs on some drivers (it does on the dev PC's GTX 1080). The detector gives each GPU run 2 s, then switches to wasm for good.
 - The phone's field of view is assumed (64° on the long side). Scale and depth trade off against each other, so overlays still line up.

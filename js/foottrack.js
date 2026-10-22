@@ -11,14 +11,29 @@ export async function createDetector({ modelUrl, size = 384, prefer = ['webgpu',
   const ort = await import(`${ORT_BASE}ort.webgpu.min.mjs`);
   ort.env.wasm.wasmPaths = ORT_BASE;
   let session = null, backend = null;
-  for (const ep of prefer) {
+  const open = async (eps) => {
+    for (const ep of eps) {
+      try {
+        session = await ort.InferenceSession.create(modelUrl, { executionProviders: [ep], graphOptimizationLevel: 'all' });
+        backend = ep;
+        return;
+      } catch (e) { console.warn(`foot model: ${ep} unavailable`, e); }
+    }
+    throw new Error('No ONNX backend available');
+  };
+  await open(prefer);
+  // WebGPU can hang or throw on some drivers; give it 2 s per frame, then drop to wasm for good
+  const GPU_TIMEOUT = 2000;
+  async function run(feeds) {
+    if (backend !== 'webgpu') return session.run(feeds);
     try {
-      session = await ort.InferenceSession.create(modelUrl, { executionProviders: [ep], graphOptimizationLevel: 'all' });
-      backend = ep;
-      break;
-    } catch (e) { console.warn(`foot model: ${ep} unavailable`, e); }
+      return await Promise.race([session.run(feeds), new Promise((_, no) => setTimeout(() => no(new Error('webgpu timeout')), GPU_TIMEOUT))]);
+    } catch (e) {
+      console.warn('foot model: webgpu failed, switching to wasm', e);
+      await open(prefer.filter((ep) => ep !== 'webgpu').concat('wasm'));
+      return session.run(feeds);
+    }
   }
-  if (!session) throw new Error('No ONNX backend available');
 
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;
@@ -41,7 +56,7 @@ export async function createDetector({ modelUrl, size = 384, prefer = ['webgpu',
       lum += px[p] * 0.299 + px[p + 1] * 0.587 + px[p + 2] * 0.114;
     }
     const t0 = performance.now();
-    const res = await session.run({ [inName]: new ort.Tensor('float32', input, [1, 3, size, size]) });
+    const res = await run({ [inName]: new ort.Tensor('float32', input, [1, 3, size, size]) });
     const ms = performance.now() - t0;
     const out = res[outName], [, ch, count] = out.dims, d = out.data; // [1, 5 + 3K, N]
     const cands = [];
@@ -61,7 +76,7 @@ export async function createDetector({ modelUrl, size = 384, prefer = ['webgpu',
     if (ch !== 5 + 3 * NUM_KPT) console.warn('unexpected model output channels', ch);
     return { feet: nms(cands, 0.45).slice(0, 2), ms, backend, brightness: lum / n / 255, top };
   }
-  return { detect, backend };
+  return { detect, get backend() { return backend; } };
 }
 
 function iou(a, b) {

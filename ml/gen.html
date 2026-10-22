@@ -11,7 +11,8 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { loadShoe } from '../js/shoe.js';
 import { SHOES } from '../js/data.js';
-import { measureKeypoints, NUM_KPT } from '../js/footspec.js';
+import { measureKeypoints, NUM_KPT, TEMPLATE_RIGHT } from '../js/footspec.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
 // BVH-accelerated raycasts: the visibility checks were the bottleneck
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
@@ -147,6 +148,97 @@ for (const def of SHOES) {
   log(`${def.id}: keypoints ${kp.map((v) => `(${v.x.toFixed(2)},${v.y.toFixed(2)},${v.z.toFixed(2)})`).join(' ')}`);
 }
 
+/* ── bare / socked foot: procedural, same normalised space as the shoes ──
+   Labelled with the shoe template's keypoints (where a shoe would sit on this foot), so the
+   tracker sizes the shoe to the foot rather than to the toes. */
+function footGeometry() {
+  const smooth = (tab, x) => {
+    for (let i = 1; i < tab.length; i++) if (x <= tab[i][0]) {
+      const [xa, a] = tab[i - 1], [xb, b] = tab[i], t = (x - xa) / (xb - xa);
+      return a + (b - a) * t * t * (3 - 2 * t);
+    }
+    return tab[tab.length - 1][1];
+  };
+  const HW = [[-1.38, 0.26], [-1.15, 0.31], [-0.6, 0.34], [-0.2, 0.37], [0.6, 0.47], [0.95, 0.44], [1.1, 0.4]];
+  const TOP = [[-1.38, 0.8], [-1.1, 1.0], [-0.6, 1.15], [0, 0.95], [0.6, 0.62], [0.95, 0.42], [1.1, 0.34]];
+  const NX = 56, NT = 28, x0 = -1.38, x1 = 1.1;
+  const pos = [], uv = [], idx = [];
+  for (let i = 0; i <= NX; i++) {
+    const u = i / NX, x = x0 + (x1 - x0) * u;
+    let hw = smooth(HW, x), top = smooth(TOP, x);
+    const back = Math.min(1, (x - x0) / 0.28), front = Math.min(1, (x1 - x) / 0.14);
+    const round = Math.sqrt(1 - (1 - back) ** 2) * Math.sqrt(1 - (1 - front) ** 2);
+    hw *= round; top *= 0.55 + 0.45 * round;
+    for (let j = 0; j <= NT; j++) {
+      const th = (j / NT) * Math.PI * 2, c = Math.cos(th), s = Math.sin(th);
+      pos.push(x, 0.5 * top * (1 + Math.sign(s) * Math.abs(s) ** (s > 0 ? 0.8 : 0.35)), hw * Math.sign(c) * Math.abs(c) ** 0.6);
+      uv.push(u, j / NT);
+    }
+  }
+  for (let i = 0; i < NX; i++) for (let j = 0; j < NT; j++) {
+    const a = i * (NT + 1) + j, b = a + NT + 1;
+    idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  const body = new THREE.BufferGeometry();
+  body.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  body.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  body.setIndex(idx);
+  body.computeVertexNormals();
+  // ankle: a column the leg continues from
+  const ankle = new THREE.CylinderGeometry(0.4, 0.44, 1.5, 24, 1, true).translate(-0.72, 1.35, 0);
+  // toes, big toe on the medial (-z) side of a right foot
+  const toes = [
+    [1.16, 0.16, -0.24, 0.16, 0.15, 0.15], [1.07, 0.12, -0.03, 0.12, 0.11, 0.1], [0.99, 0.11, 0.13, 0.11, 0.1, 0.09],
+    [0.9, 0.1, 0.27, 0.1, 0.09, 0.085], [0.79, 0.09, 0.38, 0.09, 0.08, 0.08],
+  ].map(([x, y, z, rx, ry, rz]) => new THREE.SphereGeometry(1, 14, 10).scale(rx, ry, rz).translate(x, y, z));
+  const g = mergeGeometries([body, ankle, ...toes]);
+  g.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 3).fill(1), 3));
+  return g;
+}
+const SKIN_TEX = [0, 1, 2].map(() => tex((g, s) => { g.fillStyle = '#fff'; g.fillRect(0, 0, s, s); noise(g, s, 6000, 0.08); }));
+const KNIT_TEX = [0, 1, 2, 3].map(() => tex((g, s) => {
+  g.fillStyle = '#fff'; g.fillRect(0, 0, s, s);
+  g.fillStyle = 'rgba(0,0,0,.18)'; const step = R(3, 7); for (let x = 0; x < s; x += step) g.fillRect(x, 0, 1, s);
+  noise(g, s, 4000, 0.1);
+}));
+const footGeo = footGeometry();
+footGeo.computeBoundsTree();
+const footMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, side: THREE.DoubleSide });
+const FOOT = (() => {
+  const right = new THREE.Group(), left = new THREE.Group();
+  const mr = new THREE.Mesh(footGeo, footMat), ml = new THREE.Mesh(footGeo, footMat);
+  mr.castShadow = ml.castShadow = true;
+  right.add(mr); left.add(ml);
+  const p = footGeo.attributes.position, sample = [];
+  for (let i = 0; i < p.count; i += 3) sample.push(new THREE.Vector3().fromBufferAttribute(p, i));
+  return { right, left, sample, kp: TEMPLATE_RIGHT.map(([x, y, z]) => new THREE.Vector3(x * 10, y * 10, z * 10)) };
+})();
+const SOCK = () => pick([
+  () => new THREE.Color().setHSL(0, 0, R(0.02, 0.12)),   // black
+  () => new THREE.Color().setHSL(0, 0, R(0.75, 0.95)),   // white
+  () => new THREE.Color().setHSL(0, 0, R(0.3, 0.6)),     // grey
+  () => new THREE.Color().setHSL(rnd(), R(0.2, 0.8), R(0.2, 0.7)),
+])();
+function paintFoot(look, skin) {
+  const p = footGeo.attributes.position, col = footGeo.attributes.color;
+  const sock = look === 'sock', top = R(0.55, 1.9), wave = R(-0.15, 0.15);
+  const a = SOCK(), b = chance(0.6) ? SOCK() : a, cap = chance(0.5), heel = chance(0.4), band = chance(0.6);
+  const sole = skin.clone().offsetHSL(0, -0.1, 0.12); // palms and soles are paler
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i);
+    let c = y < 0.05 ? sole : skin;
+    if (sock && y < top + wave * (x + 0.7)) {
+      c = a;
+      if ((cap && x > 0.8) || (heel && x < -1.0 && y < 1.0) || (band && y > top - 0.18 + wave * (x + 0.7))) c = b;
+    }
+    col.setXYZ(i, c.r, c.g, c.b);
+  }
+  col.needsUpdate = true;
+  footMat.map = sock ? pick(KNIT_TEX) : pick(SKIN_TEX);
+  footMat.roughness = sock ? R(0.75, 0.95) : R(0.45, 0.7);
+  footMat.needsUpdate = true;
+}
+
 /* ── legs ── */
 function legRig() {
   const g = new THREE.Group();
@@ -159,18 +251,19 @@ function legRig() {
 }
 const legs = [legRig(), legRig()];
 const up = new THREE.Vector3(0, 1, 0);
-function placeLeg(rig, ankle, hip, show) {
+function placeLeg(rig, ankle, hip, show, look, skin, s) {
   rig.g.visible = show;
   if (!show) return;
   const dir = hip.clone().sub(ankle).normalize();
   const q = new THREE.Quaternion().setFromUnitVectors(up, dir);
   const len = 0.75;
-  const skinR = R(0.035, 0.05);
+  // out of a shoe the leg is any width; on a bare/socked foot it must sit inside the ankle column
+  const skinR = look === 'shoe' ? R(0.035, 0.05) : 0.47 * s;
   rig.skin.scale.set(skinR / 0.05, len, skinR / 0.05);
   rig.skin.quaternion.copy(q);
   rig.skin.position.copy(ankle).addScaledVector(dir, len / 2 - 0.03);
-  rig.skin.material.color.set(pick(SKIN)).offsetHSL(0, 0, R(-0.05, 0.05));
-  rig.skin.material.map = chance(0.35) ? pick(CLOTH) : null; // socks / leggings sometimes
+  rig.skin.material.color.copy(skin);
+  rig.skin.material.map = look === 'shoe' && chance(0.35) ? pick(CLOTH) : null; // socks / leggings sometimes
   rig.skin.material.needsUpdate = true;
   const hem = R(-0.02, 0.16);
   rig.pants.visible = chance(0.8);
@@ -190,20 +283,28 @@ let active = null;
 async function randomScene() {
   // shoe model + look
   if (active) scene.remove(active.right, active.left);
-  active = pick(models);
-  const { m, def, meshes, leftMeshes, override } = active;
-  scene.add(active.right, active.left);
-  m.setWire(null); // back to the model's own material
-  if (chance(0.45)) {
-    if (def.colorways[0].variant != null) await m.setColorway(pick(def.colorways));
-    else await m.setColorway({ tint: { hue: R(-180, 180), sat: R(0, 1.4), light: R(0.45, 1.25) } });
+  // people try shoes on in shoes, socks or barefoot
+  const look = chance(0.5) ? 'shoe' : chance(0.6) ? 'sock' : 'bare';
+  const skin = new THREE.Color(pick(SKIN)).offsetHSL(0, R(-0.04, 0.04), R(-0.06, 0.06));
+  if (look === 'shoe') {
+    active = pick(models);
+    const { m, def, meshes, leftMeshes, override } = active;
+    m.setWire(null); // back to the model's own material
+    if (chance(0.45)) {
+      if (def.colorways[0].variant != null) await m.setColorway(pick(def.colorways));
+      else await m.setColorway({ tint: { hue: R(-180, 180), sat: R(0, 1.4), light: R(0.45, 1.25) } });
+    } else {
+      override.map = pick(SHOE_TEX);
+      override.roughness = R(0.3, 0.95);
+      override.needsUpdate = true;
+      meshes.forEach((me) => { me.material = override; });
+    }
+    meshes.forEach((me, i) => { leftMeshes[i].material = me.material; }); // left mirrors right
   } else {
-    override.map = pick(SHOE_TEX);
-    override.roughness = R(0.3, 0.95);
-    override.needsUpdate = true;
-    meshes.forEach((me) => { me.material = override; });
+    active = FOOT;
+    paintFoot(look, skin);
   }
-  meshes.forEach((me, i) => { leftMeshes[i].material = me.material; }); // left mirrors right
+  scene.add(active.right, active.left);
 
   // feet: right at +z, left at -z (body faces +X)
   const stance = R(0.1, 0.38), len = R(0.26, 0.32), s = len / 3;
@@ -233,7 +334,7 @@ async function randomScene() {
   feet.forEach((f, i) => {
     const ankle = tmp.copy(active.kp[5]).applyMatrix4(f.root.matrixWorld).clone();
     const hip = new THREE.Vector3(R(-0.15, 0.05), hipY, f.side * R(0.06, 0.14));
-    placeLeg(legs[i], ankle, hip, showFeet && chance(0.92));
+    placeLeg(legs[i], ankle, hip, showFeet && (look !== 'shoe' || chance(0.92)), look, skin, s);
   });
 
   // floor, wall, lighting
@@ -252,7 +353,7 @@ async function randomScene() {
   renderer.toneMappingExposure = R(0.6, 1.5);
 
   // camera: mostly the wearer looking down; sometimes someone else filming
-  const portrait = chance(0.8);
+  const portrait = chance(0.7);
   const W = portrait ? 480 : 640, H = portrait ? 640 : 480;
   renderer.setSize(W, H, false);
   cam.aspect = W / H;
@@ -268,17 +369,20 @@ async function randomScene() {
   });
   if (chance(0.7)) {
     // from chest height down to a crouch: phones get lowered to frame the feet
-    const h = chance(0.55) ? R(0.45, 0.95) : R(0.95, 1.5);
+    // (and sometimes right down by the feet: big, cut-off feet in frame)
+    const low = chance(0.15), h = low ? R(0.28, 0.45) : chance(0.55) ? R(0.45, 0.95) : R(0.95, 1.5);
     for (let tries = 0; tries < 12; tries++) {
-      cam.position.set(R(h < 0.95 ? 0.3 : 0.15, 0.6), h, R(-0.15, 0.15));
+      cam.position.set(low ? R(0.45, 0.75) : R(h < 0.95 ? 0.3 : 0.15, 0.6), h, R(-0.15, 0.15));
       if (clearOfLegs(cam.position)) break;
     }
-    const target = centre.clone().add(new THREE.Vector3(R(-0.05, 0.3), 0, R(-0.12, 0.12)));
+    // a low phone looks back at the feet, never past them
+    const target = centre.clone().add(new THREE.Vector3(low ? R(-0.2, 0) : R(-0.05, 0.3), 0, R(-0.12, 0.12)));
     cam.up.set(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), R(-0.3, 0.3)); // toes towards the top of the frame
     cam.lookAt(target);
-    cam.rotateZ(R(-0.2, 0.2));
+    // phones get held any way round: a third of shots at any roll
+    cam.rotateZ(chance(0.35) ? R(-Math.PI, Math.PI) : R(-0.2, 0.2));
   } else {
-    const a = R(-1.2, 1.2), d = R(0.5, 1.6);
+    const a = R(-1.2, 1.2), d = R(0.35, 1.6);
     cam.position.set(Math.cos(a) * d, R(0.15, 1.3), Math.sin(a) * d);
     cam.up.set(0, 1, 0);
     cam.lookAt(centre.clone().add(new THREE.Vector3(R(-0.1, 0.1), R(0, 0.15), R(-0.15, 0.15))));
@@ -350,7 +454,7 @@ function finish(W, H) {
 /* ── run ── */
 const save = (path, body) => fetch(`/save?path=${path}`, { method: 'POST', body });
 if (PREVIEW) {
-  const cols = 4, cw = 240, ch = 320, sheet = document.createElement('canvas');
+  const cols = 4, cw = +q.get('cw') || 240, ch = cw * 4 / 3, sheet = document.createElement('canvas');
   sheet.width = cols * cw; sheet.height = Math.ceil(PREVIEW / cols) * ch;
   const sg = sheet.getContext('2d');
   const COLORS = ['#ff2a2a', '#2a7bff', '#ffd400', '#00e0a0', '#ff00ff', '#00ffff', '#ff8800', '#ffffff'];
