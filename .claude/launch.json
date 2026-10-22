@@ -6,6 +6,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["server.mjs"],
       "port": 5173
+    },
+    {
+      "name": "ml-data",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["ml/datasrv.mjs"],
+      "port": 5174
     }
   ]
 }

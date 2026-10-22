@@ -1,0 +1,407 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>foot data generator</title>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/", "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.8.3/build/index.module.js" } }</script>
+</head><body style="margin:0;background:#111;color:#ddd;font:12px monospace"><pre id="log"></pre>
+<script type="module">
+// Synthetic training data for the foot keypoint model.
+// Usage (served by ml/datasrv.mjs):  gen.html?split=train&start=0&count=10000&seed=1
+//                                    gen.html?preview=16   (labelled contact sheet → ml/data/preview.jpg)
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { loadShoe } from '../js/shoe.js';
+import { SHOES } from '../js/data.js';
+import { measureKeypoints, NUM_KPT } from '../js/footspec.js';
+import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
+// BVH-accelerated raycasts: the visibility checks were the bottleneck
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+
+const q = new URLSearchParams(location.search);
+const PREVIEW = +q.get('preview') || 0;
+const DEBUG = q.has('debug'), skipped = {};
+const SPLIT = q.get('split') || 'train', START = +q.get('start') || 0, COUNT = PREVIEW || +q.get('count') || 100;
+const log = (s) => { document.getElementById('log').textContent += s + '\n'; };
+
+/* ── seeded random ── */
+let seed = (+q.get('seed') || 1) * 2654435761 >>> 0;
+const rnd = () => { seed += 0x6D2B79F5; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const R = (a, b) => a + (b - a) * rnd();
+const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
+const chance = (p) => rnd() < p;
+const hsl = (h, s, l) => `hsl(${h},${s}%,${l}%)`;
+
+/* ── renderer ── */
+const canvas = document.createElement('canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.toneMapping = THREE.NeutralToneMapping;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+const pm = new THREE.PMREMGenerator(renderer);
+const envs = [pm.fromScene(new RoomEnvironment(), 0.04).texture];
+try {
+  const hdr = await new RGBELoader().loadAsync('../assets/studio.hdr');
+  hdr.mapping = THREE.EquirectangularReflectionMapping;
+  envs.push(pm.fromEquirectangular(hdr).texture);
+} catch { /* room only */ }
+
+const sun = new THREE.DirectionalLight(0xffffff, 2);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+Object.assign(sun.shadow.camera, { left: -1.5, right: 1.5, top: 1.5, bottom: -1.5, near: 0.1, far: 10 });
+const amb = new THREE.AmbientLight(0xffffff, 0.2);
+scene.add(sun, sun.target, amb);
+
+/* ── procedural textures ── */
+function tex(draw, size = 256) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  draw(c.getContext('2d'), size);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+function noise(g, s, n, a) {
+  for (let i = 0; i < n; i++) { g.fillStyle = `rgba(${chance(0.5) ? '0,0,0' : '255,255,255'},${rnd() * a})`; g.fillRect(rnd() * s, rnd() * s, 1 + rnd() * 3, 1 + rnd() * 3); }
+}
+const FLOORS = [];
+for (let i = 0; i < 70; i++) {
+  const kind = i % 7, h = R(0, 360);
+  FLOORS.push(tex((g, s) => {
+    if (kind === 0) { // wood planks
+      for (let y = 0; y < s; y += s / 6) { g.fillStyle = hsl(R(20, 40), R(30, 60), R(25, 60)); g.fillRect(0, y, s, s / 6); g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, y, s, 2); }
+      noise(g, s, 3000, 0.15);
+    } else if (kind === 1) { // tiles
+      g.fillStyle = hsl(h, R(0, 30), R(40, 90)); g.fillRect(0, 0, s, s);
+      g.strokeStyle = hsl(h, 10, R(20, 70)); g.lineWidth = R(2, 8);
+      const n = pick([2, 3, 4]); for (let k = 0; k <= n; k++) { g.beginPath(); g.moveTo(0, k * s / n); g.lineTo(s, k * s / n); g.moveTo(k * s / n, 0); g.lineTo(k * s / n, s); g.stroke(); }
+      noise(g, s, 1500, 0.08);
+    } else if (kind === 2) { // concrete
+      g.fillStyle = hsl(h, R(0, 10), R(35, 75)); g.fillRect(0, 0, s, s); noise(g, s, 12000, 0.18);
+    } else if (kind === 3) { // carpet
+      g.fillStyle = hsl(h, R(10, 60), R(15, 60)); g.fillRect(0, 0, s, s); noise(g, s, 20000, 0.3);
+    } else if (kind === 4) { // checker
+      const n = pick([4, 8]); for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) { g.fillStyle = (a + b) % 2 ? hsl(h, 20, R(10, 40)) : hsl(h, 20, R(60, 95)); g.fillRect(a * s / n, b * s / n, s / n, s / n); }
+    } else if (kind === 5) { // asphalt / terrazzo
+      g.fillStyle = hsl(h, R(0, 15), R(20, 55)); g.fillRect(0, 0, s, s);
+      for (let k = 0; k < 400; k++) { g.fillStyle = hsl(R(0, 360), R(0, 30), R(20, 90)); g.beginPath(); g.arc(rnd() * s, rnd() * s, R(1, 5), 0, 7); g.fill(); }
+    } else { // plain painted
+      g.fillStyle = hsl(h, R(0, 70), R(10, 92)); g.fillRect(0, 0, s, s); noise(g, s, 800, 0.05);
+    }
+  }, 512));
+}
+const SHOE_TEX = [];
+for (let i = 0; i < 60; i++) {
+  const kind = i % 5;
+  SHOE_TEX.push(tex((g, s) => {
+    const a = hsl(R(0, 360), R(0, 90), R(8, 92)), b = hsl(R(0, 360), R(0, 90), R(8, 92));
+    g.fillStyle = a; g.fillRect(0, 0, s, s);
+    if (kind === 1) { g.fillStyle = b; for (let y = 0; y < s; y += R(8, 40)) g.fillRect(0, y, s, R(3, 14)); }
+    if (kind === 2) { g.fillStyle = b; for (let k = 0; k < 30; k++) g.fillRect(rnd() * s, rnd() * s, R(10, 80), R(10, 80)); }
+    if (kind === 3) noise(g, s, 15000, 0.4);
+    if (kind === 4) { const gr = g.createLinearGradient(0, 0, s, s); gr.addColorStop(0, a); gr.addColorStop(1, b); g.fillStyle = gr; g.fillRect(0, 0, s, s); }
+  }));
+}
+const CLOTH = [];
+for (let i = 0; i < 40; i++) {
+  const kind = i % 4;
+  CLOTH.push(tex((g, s) => {
+    if (kind === 0) { g.fillStyle = hsl(R(205, 230), R(20, 60), R(15, 55)); g.fillRect(0, 0, s, s); noise(g, s, 15000, 0.25); }          // denim
+    else if (kind === 1) { g.fillStyle = hsl(R(0, 360), R(0, 25), R(5, 30)); g.fillRect(0, 0, s, s); noise(g, s, 5000, 0.12); }        // dark trousers
+    else if (kind === 2) { g.fillStyle = hsl(R(15, 40), R(15, 50), R(40, 75)); g.fillRect(0, 0, s, s); noise(g, s, 5000, 0.1); }       // khaki / chinos
+    else { g.fillStyle = hsl(R(0, 360), R(10, 80), R(15, 85)); g.fillRect(0, 0, s, s); noise(g, s, 3000, 0.1); }                         // anything
+  }));
+}
+const SKIN = ['#f1c27d', '#e0ac69', '#c68642', '#8d5524', '#5c3a21', '#ffdbac', '#3b2219'];
+
+/* ── floor + wall ── */
+const floorMat = new THREE.MeshStandardMaterial({ roughness: 0.85 });
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), floorMat);
+floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true;
+const wallMat = new THREE.MeshStandardMaterial({ roughness: 0.9 });
+const wall = new THREE.Mesh(new THREE.PlaneGeometry(14, 6), wallMat);
+wall.position.set(-1.2, 3, 0); wall.rotation.y = Math.PI / 2; wall.receiveShadow = true;
+scene.add(floor, wall);
+
+/* ── shoes: load each model, measure its keypoints, make a right + mirrored left ── */
+const models = [];
+for (const def of SHOES) {
+  const m = await loadShoe(def);
+  const meshes = []; m.root.traverse((o) => { if (o.isMesh) meshes.push(o); });
+  meshes.forEach((me) => me.geometry.computeBoundsTree());
+  const kp = measureKeypoints(THREE, m.root);
+  // vertex sample (normalised space) for tight 2D boxes
+  const sample = [];
+  m.root.updateMatrixWorld(true);
+  for (const me of meshes) {
+    const pos = me.geometry.attributes.position, step = Math.max(1, Math.floor(pos.count / 700));
+    for (let i = 0; i < pos.count; i += step) sample.push(new THREE.Vector3().fromBufferAttribute(pos, i).applyMatrix4(me.matrixWorld));
+  }
+  const right = m.root, left = m.root.clone(true);
+  const leftMeshes = []; left.traverse((o) => { if (o.isMesh) leftMeshes.push(o); });
+  // procedural looks go on a separate material, so the model's real materials are never touched
+  const override = new THREE.MeshStandardMaterial({ roughness: 0.7 });
+  models.push({ def, m, kp, sample, right, left, meshes, leftMeshes, override });
+  log(`${def.id}: keypoints ${kp.map((v) => `(${v.x.toFixed(2)},${v.y.toFixed(2)},${v.z.toFixed(2)})`).join(' ')}`);
+}
+
+/* ── legs ── */
+function legRig() {
+  const g = new THREE.Group();
+  const skin = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.042, 1, 20, 1, true), new THREE.MeshStandardMaterial({ roughness: 0.6 }));
+  const pants = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 1, 24, 1, false), new THREE.MeshStandardMaterial({ roughness: 0.9 }));
+  skin.castShadow = pants.castShadow = true;
+  g.add(skin, pants);
+  scene.add(g);
+  return { g, skin, pants };
+}
+const legs = [legRig(), legRig()];
+const up = new THREE.Vector3(0, 1, 0);
+function placeLeg(rig, ankle, hip, show) {
+  rig.g.visible = show;
+  if (!show) return;
+  const dir = hip.clone().sub(ankle).normalize();
+  const q = new THREE.Quaternion().setFromUnitVectors(up, dir);
+  const len = 0.75;
+  const skinR = R(0.035, 0.05);
+  rig.skin.scale.set(skinR / 0.05, len, skinR / 0.05);
+  rig.skin.quaternion.copy(q);
+  rig.skin.position.copy(ankle).addScaledVector(dir, len / 2 - 0.03);
+  rig.skin.material.color.set(pick(SKIN)).offsetHSL(0, 0, R(-0.05, 0.05));
+  rig.skin.material.map = chance(0.35) ? pick(CLOTH) : null; // socks / leggings sometimes
+  rig.skin.material.needsUpdate = true;
+  const hem = R(-0.02, 0.16);
+  rig.pants.visible = chance(0.8);
+  const pr = R(0.06, 0.12), plen = 0.8;
+  rig.pants.scale.set(pr / 0.09, plen, pr / 0.09);
+  rig.pants.quaternion.copy(q);
+  rig.pants.position.copy(ankle).addScaledVector(dir, hem + plen / 2);
+  rig.pants.material.map = pick(CLOTH);
+  rig.pants.material.color.set(0xffffff);
+  rig.pants.material.needsUpdate = true;
+}
+
+/* ── one random scene ── */
+const cam = new THREE.PerspectiveCamera(60, 3 / 4, 0.02, 30);
+const tmp = new THREE.Vector3();
+let active = null;
+async function randomScene() {
+  // shoe model + look
+  if (active) scene.remove(active.right, active.left);
+  active = pick(models);
+  const { m, def, meshes, leftMeshes, override } = active;
+  scene.add(active.right, active.left);
+  m.setWire(null); // back to the model's own material
+  if (chance(0.45)) {
+    if (def.colorways[0].variant != null) await m.setColorway(pick(def.colorways));
+    else await m.setColorway({ tint: { hue: R(-180, 180), sat: R(0, 1.4), light: R(0.45, 1.25) } });
+  } else {
+    override.map = pick(SHOE_TEX);
+    override.roughness = R(0.3, 0.95);
+    override.needsUpdate = true;
+    meshes.forEach((me) => { me.material = override; });
+  }
+  meshes.forEach((me, i) => { leftMeshes[i].material = me.material; }); // left mirrors right
+
+  // feet: right at +z, left at -z (body faces +X)
+  const stance = R(0.1, 0.38), len = R(0.26, 0.32), s = len / 3;
+  const feet = [
+    { root: active.right, side: 1 },
+    { root: active.left, side: -1 },
+  ];
+  const stepFoot = chance(0.4) ? pick([0, 1]) : -1;
+  for (const f of feet) {
+    const out = R(-0.05, 0.45);
+    f.root.scale.set(s, s, s * f.side);
+    f.root.rotation.set(0, -f.side * out, 0);
+    // heel raise / toe raise sometimes
+    if (chance(0.2)) f.root.rotation.z = R(-0.35, 0.15);
+    f.root.position.set(R(-0.04, 0.04) + (feet.indexOf(f) === stepFoot ? R(-0.3, 0.3) : 0), 0, f.side * stance / 2);
+    f.root.updateMatrixWorld(true);
+    // keep the sole on the floor after tilting
+    const minY = Math.min(...active.sample.filter((_, i) => i % 7 === 0).map((v) => tmp.copy(v).applyMatrix4(f.root.matrixWorld).y));
+    f.root.position.y -= minY;
+    f.root.updateMatrixWorld(true);
+  }
+  const showFeet = !chance(0.04); // a few empty frames: floor and nothing else
+  active.right.visible = active.left.visible = showFeet;
+
+  // legs up towards the hips
+  const hipY = R(0.8, 1.0);
+  feet.forEach((f, i) => {
+    const ankle = tmp.copy(active.kp[5]).applyMatrix4(f.root.matrixWorld).clone();
+    const hip = new THREE.Vector3(R(-0.15, 0.05), hipY, f.side * R(0.06, 0.14));
+    placeLeg(legs[i], ankle, hip, showFeet && chance(0.92));
+  });
+
+  // floor, wall, lighting
+  floorMat.map = pick(FLOORS); floorMat.map.repeat.setScalar(R(1.5, 8)); floorMat.map.rotation = R(0, 6.28); floorMat.color.setScalar(1); floorMat.needsUpdate = true;
+  wallMat.map = pick(FLOORS); wallMat.needsUpdate = true;
+  wall.visible = chance(0.5);
+  scene.background = new THREE.Color().setHSL(rnd(), R(0, 0.3), R(0.2, 0.9));
+  scene.environment = pick(envs);
+  scene.environmentIntensity = R(0.2, 1.1);
+  scene.environmentRotation.y = R(0, 6.28);
+  sun.color.setHSL(R(0.05, 0.6), R(0, 0.4), R(0.7, 1));
+  sun.intensity = R(0.3, 3.2);
+  sun.position.set(R(-3, 3), R(1.5, 5), R(-3, 3));
+  sun.castShadow = chance(0.8);
+  amb.intensity = R(0.05, 0.5);
+  renderer.toneMappingExposure = R(0.6, 1.5);
+
+  // camera: mostly the wearer looking down; sometimes someone else filming
+  const portrait = chance(0.8);
+  const W = portrait ? 480 : 640, H = portrait ? 640 : 480;
+  renderer.setSize(W, H, false);
+  cam.aspect = W / H;
+  cam.fov = R(50, 75);
+  const centre = new THREE.Vector3(0.14, 0.03, 0);
+  // the phone must be in front of the legs, never inside them (a crouching person's knees
+  // come forward, the phone is held beyond them)
+  const clearOfLegs = (p) => legs.every((lg) => {
+    if (!lg.g.visible) return true;
+    const a = lg.skin.position, axis = new THREE.Vector3(0, 1, 0).applyQuaternion(lg.skin.quaternion);
+    const v = p.clone().sub(a), along = v.dot(axis), off = v.sub(axis.multiplyScalar(along)).length();
+    return off > 0.15 + (lg.pants.visible ? 0.12 : 0.05);
+  });
+  if (chance(0.7)) {
+    // from chest height down to a crouch: phones get lowered to frame the feet
+    const h = chance(0.55) ? R(0.45, 0.95) : R(0.95, 1.5);
+    for (let tries = 0; tries < 12; tries++) {
+      cam.position.set(R(h < 0.95 ? 0.3 : 0.15, 0.6), h, R(-0.15, 0.15));
+      if (clearOfLegs(cam.position)) break;
+    }
+    const target = centre.clone().add(new THREE.Vector3(R(-0.05, 0.3), 0, R(-0.12, 0.12)));
+    cam.up.set(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), R(-0.3, 0.3)); // toes towards the top of the frame
+    cam.lookAt(target);
+    cam.rotateZ(R(-0.2, 0.2));
+  } else {
+    const a = R(-1.2, 1.2), d = R(0.5, 1.6);
+    cam.position.set(Math.cos(a) * d, R(0.15, 1.3), Math.sin(a) * d);
+    cam.up.set(0, 1, 0);
+    cam.lookAt(centre.clone().add(new THREE.Vector3(R(-0.1, 0.1), R(0, 0.15), R(-0.15, 0.15))));
+  }
+  cam.updateProjectionMatrix();
+  cam.updateMatrixWorld(true);
+  return { W, H, feet, showFeet };
+}
+
+/* ── labels: 2D box + keypoints with visibility ── */
+const ray = new THREE.Raycaster();
+function label({ W, H, feet, showFeet }) {
+  if (!showFeet) return [];
+  const occluders = [];
+  scene.traverse((o) => { if (o.isMesh && o.visible && o !== floor && o !== wall) { let p = o, vis = true; while (p) { if (!p.visible) vis = false; p = p.parent; } if (vis) occluders.push(o); } });
+  const lines = [];
+  const why = (r) => { if (DEBUG) skipped[r] = (skipped[r] || 0) + 1; };
+  for (const f of feet) {
+    const proj = (v) => { const p = v.clone().project(cam); return { x: (p.x * 0.5 + 0.5) * W, y: (-p.y * 0.5 + 0.5) * H, z: p.z }; };
+    const pts = active.sample.map((v) => proj(tmp.copy(v).applyMatrix4(f.root.matrixWorld)));
+    if (pts.some((p) => p.z > 1 || p.z < -1)) { why('behind camera'); continue; }
+    let x0 = Math.min(...pts.map((p) => p.x)), x1 = Math.max(...pts.map((p) => p.x));
+    let y0 = Math.min(...pts.map((p) => p.y)), y1 = Math.max(...pts.map((p) => p.y));
+    const full = (x1 - x0) * (y1 - y0);
+    const cx0 = Math.max(0, x0), cx1 = Math.min(W, x1), cy0 = Math.max(0, y0), cy1 = Math.min(H, y1);
+    // label feet even when partly out of frame (users won't frame perfectly)
+    if (cx1 - cx0 < 12 || cy1 - cy0 < 12 || (cx1 - cx0) * (cy1 - cy0) < full * 0.15) { why('mostly out of frame'); continue; }
+    // "hidden" means covered by something else (legs, trousers, the other shoe). A shoe's own
+    // surface doesn't count: from above, the toe tip and heel are seen at a grazing angle but
+    // the foot is plainly there.
+    const own = new Set(); f.root.traverse((o) => { if (o.isMesh) own.add(o); });
+    const others = occluders.filter((o) => !own.has(o));
+    const kps = active.kp.map((k) => {
+      const w = k.clone().applyMatrix4(f.root.matrixWorld);
+      const p = proj(w);
+      if (p.x < 0 || p.x >= W || p.y < 0 || p.y >= H) return [0, 0, 0];
+      const d = w.distanceTo(cam.position);
+      ray.set(cam.position, w.clone().sub(cam.position).normalize());
+      ray.far = d;
+      const hit = ray.intersectObjects(others, false)[0];
+      return [p.x / W, p.y / H, hit && hit.distance < d - 0.012 ? 1 : 2];
+    });
+    // a foot buried under a trouser hem isn't a visible foot: don't teach the model to find one there
+    if (kps.filter((k) => k[2] > 0).length < 4) { why('<4 kps in frame'); continue; }
+    if (kps.filter((k) => k[2] === 2).length < 3) { why(`<3 visible (vis ${kps.map((k) => k[2]).join('')})`); continue; }
+    why('labelled');
+    lines.push([0, (cx0 + cx1) / 2 / W, (cy0 + cy1) / 2 / H, (cx1 - cx0) / W, (cy1 - cy0) / H, ...kps.flat()]
+      .map((n, i) => (i === 0 ? n : n.toFixed(5))).join(' '));
+  }
+  return lines;
+}
+
+/* ── output: light camera-style degradation, then jpeg ── */
+const out = document.createElement('canvas');
+const og = out.getContext('2d');
+function finish(W, H) {
+  out.width = W; out.height = H;
+  og.filter = chance(0.35) ? `blur(${R(0.4, 1.6).toFixed(2)}px)` : 'none';
+  og.drawImage(canvas, 0, 0);
+  og.filter = 'none';
+  if (chance(0.5)) { // sensor noise
+    const img = og.getImageData(0, 0, W, H), d = img.data, amt = R(4, 14);
+    for (let i = 0; i < d.length; i += 4) { const n = (rnd() - 0.5) * amt; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+    og.putImageData(img, 0, 0);
+  }
+  return new Promise((res) => out.toBlob(res, 'image/jpeg', R(0.6, 0.92)));
+}
+
+/* ── run ── */
+const save = (path, body) => fetch(`/save?path=${path}`, { method: 'POST', body });
+if (PREVIEW) {
+  const cols = 4, cw = 240, ch = 320, sheet = document.createElement('canvas');
+  sheet.width = cols * cw; sheet.height = Math.ceil(PREVIEW / cols) * ch;
+  const sg = sheet.getContext('2d');
+  const COLORS = ['#ff2a2a', '#2a7bff', '#ffd400', '#00e0a0', '#ff00ff', '#00ffff', '#ff8800', '#ffffff'];
+  for (let i = 0; i < PREVIEW; i++) {
+    const sc = await randomScene();
+    renderer.render(scene, cam);
+    const lines = label(sc);
+    const x = (i % cols) * cw, y = Math.floor(i / cols) * ch, k = Math.min(cw / sc.W, ch / sc.H);
+    sg.drawImage(canvas, x, y, sc.W * k, sc.H * k);
+    for (const l of lines) {
+      const v = l.split(' ').map(Number);
+      sg.strokeStyle = '#0f0'; sg.lineWidth = 1.5;
+      sg.strokeRect(x + (v[1] - v[3] / 2) * sc.W * k, y + (v[2] - v[4] / 2) * sc.H * k, v[3] * sc.W * k, v[4] * sc.H * k);
+      for (let j = 0; j < NUM_KPT; j++) {
+        const [kx, ky, kv] = v.slice(5 + j * 3, 8 + j * 3);
+        if (!kv) continue;
+        sg.fillStyle = COLORS[j]; sg.globalAlpha = kv === 2 ? 1 : 0.45;
+        sg.beginPath(); sg.arc(x + kx * sc.W * k, y + ky * sc.H * k, 3.5, 0, 7); sg.fill();
+      }
+      sg.globalAlpha = 1;
+    }
+  }
+  await save('preview.jpg', await new Promise((r) => sheet.toBlob(r, 'image/jpeg', 0.9)));
+  log('preview saved');
+  if (DEBUG) log('feet outcomes: ' + JSON.stringify(skipped, null, 1));
+} else {
+  const t0 = performance.now();
+  let feetTotal = 0;
+  const T = { scene: 0, render: 0, label: 0, encode: 0, save: 0 };
+  const lap = (k, t) => { const n = performance.now(); T[k] += n - t; return n; };
+  let pending = Promise.resolve();
+  for (let i = START; i < START + COUNT; i++) {
+    let t = performance.now();
+    const sc = await randomScene(); t = lap('scene', t);
+    renderer.render(scene, cam); t = lap('render', t);
+    const lines = label(sc); t = lap('label', t);
+    feetTotal += lines.length;
+    const name = String(i).padStart(6, '0');
+    const blob = await finish(sc.W, sc.H); t = lap('encode', t);
+    await pending; t = lap('save', t);
+    // overlap the upload of this frame with rendering the next
+    pending = Promise.all([
+      save(`synth/images/${SPLIT}/${name}.jpg`, blob),
+      save(`synth/labels/${SPLIT}/${name}.txt`, lines.join('\n')),
+    ]);
+    if ((i - START) % 100 === 0) {
+      const n = i - START + 1;
+      log(`${SPLIT} ${n}/${COUNT}  ${((performance.now() - t0) / 1000).toFixed(0)}s  feet ${feetTotal}  ms/img: ${Object.entries(T).map(([k, v]) => `${k} ${(v / n).toFixed(0)}`).join(' ')}`);
+    }
+  }
+  await pending;
+  log(`DONE ${SPLIT} ${COUNT} images, ${feetTotal} feet, ${((performance.now() - t0) / 1000).toFixed(0)}s`);
+}
+</script></body></html>
