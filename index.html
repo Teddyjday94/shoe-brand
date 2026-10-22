@@ -103,6 +103,19 @@
     </div>
   </section>
 
+  <!-- ─── FILM: 15s product film, rendered from the same 3D scene ─── -->
+  <section class="film" aria-label="Product film">
+    <div class="film__bar">
+      <samp>[ FILM / 00:15 ]</samp>
+      <samp class="film__note">MK-1 / HI-1 / TRK-1 — RENDERED IN-HOUSE, NOT SHOT</samp>
+      <button class="film__toggle" type="button" aria-pressed="false">[ PAUSE ]</button>
+    </div>
+    <video class="film__video" data-autoplay muted loop playsinline preload="none"
+      poster="assets/film-poster.jpg" aria-label="15-second product film showing the MK-1, HI-1 and TRK-1 in all nine colorways">
+      <source src="assets/film.mp4" type="video/mp4">
+    </video>
+  </section>
+
   <!-- ─── DIRECTORY: the other pages ─── -->
   <section class="dir" aria-label="More">
     <a class="dir__item" href="shop.html">

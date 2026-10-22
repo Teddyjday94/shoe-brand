@@ -165,6 +165,29 @@ document.addEventListener('click', (e) => {
   scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 });
 
+/* ── autoplay videos: play only while on screen, never for reduced-motion users ── */
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+$$('video[data-autoplay]').forEach((v) => {
+  const btn = v.closest('section')?.querySelector('.film__toggle');
+  let userPaused = calm;
+  const sync = () => {
+    if (!btn) return;
+    btn.textContent = v.paused ? '[ PLAY ]' : '[ PAUSE ]';
+    btn.setAttribute('aria-pressed', String(v.paused));
+  };
+  v.addEventListener('play', sync);
+  v.addEventListener('pause', sync);
+  btn?.addEventListener('click', () => {
+    userPaused = !v.paused;
+    if (v.paused) v.play().catch(() => {}); else v.pause();
+  });
+  new IntersectionObserver(([e]) => {
+    if (e.isIntersecting && !userPaused) v.play().catch(() => {}); // muted + playsinline, so allowed
+    else if (!e.isIntersecting) v.pause();
+  }, { threshold: 0.35 }).observe(v);
+  sync();
+});
+
 /* ── reveal on enter ── */
 const revealIO = new IntersectionObserver((entries) => {
   entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-in'); revealIO.unobserve(e.target); } });

@@ -46,5 +46,7 @@ Static files, no build. Pushes to `main` deploy to production on Vercel: https:/
 - MK-1: "MaterialsVariantsShoe" © Shopify, [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/), via [Khronos glTF-Sample-Assets](https://github.com/KhronosGroup/glTF-Sample-Assets)
 - HI-1: ["Sneaker"](https://www.sloyd.ai/free-3d-models/model/sneaker-bsvvqs9l) by ShaderSculptor, generated with Sloyd, [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - TRK-1: ["A sleek, edgy sneaker with angular shapes, neon colors"](https://www.sloyd.ai/free-3d-models/model/a-sleek-edgy-sneaker-with-angular-shapes-neon-colors-oyqsgfgl) by PurpleShade3D, generated with Sloyd, [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- Studio lighting: ["Studio Small 09"](https://polyhaven.com/a/studio_small_09) HDRI by Poly Haven, CC0 (`assets/studio.hdr`)
+- `assets/film.mp4`: 15s product film rendered frame by frame from the site's own 3D scene and encoded with ffmpeg
 - Photos in `assets/flash.jpg` and `assets/stairs.jpg`: AI-generated (Artlist)
 - SLAB is a fictional brand.

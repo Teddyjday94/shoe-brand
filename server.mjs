@@ -7,6 +7,7 @@ const root = new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$
 const types = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript',
   '.glb': 'model/gltf-binary', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml',
+  '.mp4': 'video/mp4', '.hdr': 'image/vnd.radiance',
 };
 
 createServer(async (req, res) => {

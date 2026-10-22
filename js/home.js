@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { $, clamp, lerp, ease, pad, wait, flashClass, sizePicker, cart } from './ui.js';
 import { SHOES, shoeById } from './data.js';
-import { loadShoe, studioEnvironment } from './shoe.js';
+import { loadShoe, applyStudio, contactShadow } from './shoe.js';
 
 /* ── inspection steps: camera pos, look target, shoe yaw/roll (copy comes from each shoe) ── */
 const STEPS = [
@@ -57,12 +57,13 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true 
 // phones have 3x screens; 1.5x keeps the shadowed render at full frame rate while scrolling
 const coarse = matchMedia('(pointer: coarse)').matches;
 renderer.setPixelRatio(Math.min(devicePixelRatio, coarse ? 1.5 : 2));
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
+// Khronos PBR Neutral: keeps product colour true and blacks deep (ACES washed the new shoes out)
+renderer.toneMapping = THREE.NeutralToneMapping;
 renderer.shadowMap.enabled = true;
 
 const scene = new THREE.Scene();
-scene.environment = studioEnvironment(renderer);
-scene.environmentIntensity = 0.7;
+applyStudio(renderer, scene);
+scene.environmentIntensity = 0.6;
 
 const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 100);
 camera.position.set(...STEPS[0].cam);
@@ -83,6 +84,8 @@ const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.ShadowMa
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
+const contactG = new THREE.Group(); // turns with the shoe, stays on the floor
+scene.add(contactG);
 
 const pivot = new THREE.Group(); // yaw + roll applied here
 scene.add(pivot);
@@ -106,6 +109,8 @@ async function showShoe(def, onProgress = () => {}) {
   if (token !== loadToken) { m.dispose(); return; } // a newer pick won the race
   if (model) { pivot.remove(model.root); model.dispose(); }
   model = m;
+  contactG.clear();
+  contactG.add(contactShadow(m.root)); // measure before it joins the rotated pivot
   pivot.add(m.root);
   if ($('#wire').checked) m.setWire(wireMat);
   await m.setColorway(shoe.colorways[cwIndex]);
@@ -360,7 +365,8 @@ function frame(t) {
   pivot.rotation.y = lerp(A.yaw, B.yaw, k) + dragYaw + idle;
   pivot.rotation.x = lerp(A.roll, B.roll, k);
   pivot.position.y = Math.abs(Math.sin(pivot.rotation.x)) * 0.75;
-  floor.visible = Math.abs(pivot.rotation.x) < 0.2;
+  floor.visible = contactG.visible = Math.abs(pivot.rotation.x) < 0.2;
+  contactG.rotation.y = pivot.rotation.y;
 
   renderer.render(scene, camera);
   pivot.updateMatrixWorld(true);

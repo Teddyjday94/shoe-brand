@@ -2,12 +2,51 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
 const BASE = new URL('../', import.meta.url);
 const loader = new GLTFLoader();
+const coarse = matchMedia('(pointer: coarse)').matches;
 
 export function studioEnvironment(renderer) {
   return new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+}
+
+// photographed studio (Poly Haven "Studio Small 09", CC0): real softboxes in the reflections.
+// The procedural room is used until it arrives, so nothing waits on it.
+export function applyStudio(renderer, scene) {
+  scene.environment = studioEnvironment(renderer);
+  return new RGBELoader().loadAsync(new URL('assets/studio.hdr', BASE).href).then((hdr) => {
+    hdr.mapping = THREE.EquirectangularReflectionMapping;
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromEquirectangular(hdr).texture;
+    hdr.dispose(); pmrem.dispose();
+  }).catch(() => { /* keep the procedural room */ });
+}
+
+// soft contact shadow where the sole meets the floor — the hard flash shadow alone
+// leaves the shoe looking pasted on. A blurred ellipse, sized to the shoe's footprint.
+export function contactShadow(root, opacity = 0.6) {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 128;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(128, 64, 4, 128, 64, 64);
+  grad.addColorStop(0, 'rgba(0,0,0,1)');
+  grad.addColorStop(0.55, 'rgba(0,0,0,.45)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  g.setTransform(1, 0, 0, 0.5, 0, 32); // squash the circle into an ellipse
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 256, 256);
+  const size = new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3());
+  const plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(1, 1),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, opacity, depthWrite: false, toneMapped: false }),
+  );
+  plane.rotation.x = -Math.PI / 2;
+  plane.scale.set(size.x * 1.08, size.z * 2.2, 1);
+  plane.position.y = 0.004;
+  plane.renderOrder = -1;
+  return plane;
 }
 
 // hue-rotate / saturate / lighten a colour in YIQ space (for single-texture models)
@@ -24,7 +63,7 @@ const TINT_GLSL = (v) => `
    - normal map from luminance (Sobel), so printed panels and seams catch light
    - roughness map: matte body, glossier on bright saturated trims
    - emissive mask: the bright, saturated piping glows */
-const DETAIL_SIZE = 1024;
+const DETAIL_SIZE = coarse ? 1024 : 2048; // full texture resolution on desktop, half on phones
 function deriveMaps(image, { bump = 1.5, roughness = 0.6, glow = 0 }) {
   const N = DETAIL_SIZE;
   const c = document.createElement('canvas');
@@ -83,20 +122,30 @@ function deriveMaps(image, { bump = 1.5, roughness = 0.6, glow = 0 }) {
   return { normal: toTex(nrm), rough: toTex(rgh), emissive: glow ? toTex(emi, true) : null };
 }
 
+// returns an upgraded physical material: derived maps + fabric sheen + a thin clear coat
 function addDetail(material, detail) {
-  if (!material.map || material.normalMap || !material.map.image) return;
+  if (!material.map || material.normalMap || !material.map.image) return material;
   const maps = deriveMaps(material.map.image, detail);
-  material.normalMap = maps.normal;
-  material.normalScale.set(1, -1); // glTF's green-channel convention
-  material.roughnessMap = maps.rough;
-  material.roughness = 1;
-  material.metalness = 0;
+  const m = new THREE.MeshPhysicalMaterial({
+    map: material.map,
+    normalMap: maps.normal,
+    normalScale: new THREE.Vector2(1, -1), // glTF's green-channel convention
+    roughnessMap: maps.rough,
+    roughness: 1,
+    metalness: 0,
+    sheen: detail.sheen ?? 0.2,          // the soft edge glow knit and mesh get at grazing angles (more turns milky)
+    sheenRoughness: 0.75,
+    sheenColor: new THREE.Color(0xffffff),
+    clearcoat: detail.clearcoat ?? 0.15, // moulded TPU / coated leather
+    clearcoatRoughness: 0.35,
+  });
   if (maps.emissive) {
-    material.emissiveMap = maps.emissive;
-    material.emissive.set(0xffffff);
-    material.emissiveIntensity = detail.glow;
+    m.emissiveMap = maps.emissive;
+    m.emissive.set(0xffffff);
+    m.emissiveIntensity = detail.glow;
   }
-  material.needsUpdate = true;
+  material.dispose();
+  return m;
 }
 
 function addTint(material, uniforms) {
@@ -144,7 +193,7 @@ export function loadShoe(shoeDef, onProgress = () => {}) {
         o.castShadow = true;
         // sharper textures at grazing angles (most of what a scroll-past camera sees)
         Object.values(o.material).forEach((v) => { if (v?.isTexture) v.anisotropy = 8; });
-        if (shoeDef.detail) addDetail(o.material, shoeDef.detail);
+        if (shoeDef.detail) o.material = addDetail(o.material, shoeDef.detail);
         if (!hasVariants) addTint(o.material, tint);
         o.userData.mat = o.material;
         tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
