@@ -45,8 +45,10 @@ export async function createDetector({ modelUrl, size = 384, prefer = ['webgpu',
     const ms = performance.now() - t0;
     const out = res[outName], [, ch, count] = out.dims, d = out.data; // [1, 5 + 3K, N]
     const cands = [];
+    let top = 0;
     for (let j = 0; j < count; j++) {
       const s = d[4 * count + j];
+      if (s > top) top = s;
       if (s < minScore) continue;
       const cx = d[j], cy = d[count + j], bw = d[2 * count + j], bh = d[3 * count + j];
       const kps = [];
@@ -57,7 +59,7 @@ export async function createDetector({ modelUrl, size = 384, prefer = ['webgpu',
       cands.push({ score: s, box: [(cx - bw / 2 - ox) / k, (cy - bh / 2 - oy) / k, (cx + bw / 2 - ox) / k, (cy + bh / 2 - oy) / k], kps });
     }
     if (ch !== 5 + 3 * NUM_KPT) console.warn('unexpected model output channels', ch);
-    return { feet: nms(cands, 0.45).slice(0, 2), ms, backend, brightness: lum / n / 255 };
+    return { feet: nms(cands, 0.45).slice(0, 2), ms, backend, brightness: lum / n / 255, top };
   }
   return { detect, backend };
 }
