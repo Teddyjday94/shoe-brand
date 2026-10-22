@@ -6,6 +6,7 @@ A mock-up sneaker brand site in an industrial-brutalist style. Three.js, no buil
 | --- | --- |
 | `index.html` | Scroll-driven 3D inspection with hotspot callouts, drag to rotate, X-ray, model + colorway + size + reserve. `?s=hi1&c=2` opens a shoe and colorway. |
 | `shop.html` | All shoes, grouped by model, with size pickers; shipping / returns / sizing |
+| `tryon.html` | "See it in your room": life-size AR on phones (Quick Look / Scene Viewer / WebXR via model-viewer), QR hand-off on desktop, Snapchat foot try-on lenses once published |
 | `lab.html` | Live render of any shoe on a pallet in a loading dock, three switchable security cameras, spec sheet |
 
 ## The line
@@ -27,7 +28,10 @@ The cart lives in `localStorage`, so it follows you between pages. Nothing is so
 - `js/data.js` — products, prices, stock, sizes
 - `js/shoe.js` — loads and normalises the 3D model, colorway switching
 - `js/home.js`, `js/shop.js`, `js/lab.js` — one per page
-- `assets/mk1-*.png` — product shots rendered from the 3D model
+- `js/tryon.js` — Try On page
+- `assets/<shoe>-<colorway>.png` — product shots rendered from the 3D models
+- `assets/ar/<shoe>-<colorway>.glb` — standalone AR models: 30 cm (US M 9), colorway and detail baked in
+- `snap-lens/` — Snapchat foot try-on lens files + publishing guide ([snap-lens/README.md](snap-lens/README.md)); paste published lens links into `SNAP_LENSES` in `js/data.js`
 
 ## Run
 

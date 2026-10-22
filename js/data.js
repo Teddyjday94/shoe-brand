@@ -65,6 +65,17 @@ export const SHOES = [
   },
 ];
 
+// Snapchat foot-tracking lenses (one per shoe; colorways switch inside the lens).
+// Paste each lens's share link here once it's published — see snap-lens/README.md.
+export const SNAP_LENSES = {
+  mk1: null,  // e.g. 'https://www.snapchat.com/lens/…'
+  hi1: null,
+  trk1: null,
+};
+
+// standalone, real-scale models with the colorway baked in, for "see it in your room" AR
+export const arModel = (shoeId, colorKey) => `assets/ar/${shoeId}-${colorKey}.glb`;
+
 // flat product list: one product per shoe × colorway
 export const PRODUCTS = SHOES.flatMap((shoe) => shoe.colorways.map((c, i) => ({
   ...c,

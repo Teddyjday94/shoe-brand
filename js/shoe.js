@@ -230,7 +230,7 @@ export function loadShoe(shoeDef, onProgress = () => {}) {
         shoe.traverse((o) => {
           if (!o.isMesh) return;
           o.geometry.dispose();
-          [].concat(o.userData.mat).forEach((m) => {
+          [].concat(o.userData.mat ?? o.material).forEach((m) => {
             Object.values(m).forEach((v) => { if (v?.isTexture) v.dispose(); });
             m.dispose();
           });

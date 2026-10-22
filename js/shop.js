@@ -22,6 +22,7 @@ function card(p) {
         <a class="btn" href="index.html?s=${p.shoe.id}&c=${p.index}">VIEW IN 3D</a>
         <button class="btn btn--buy" type="button" data-buy ${soldOut ? 'disabled' : ''}>${soldOut ? 'GONE' : 'RESERVE'}</button>
       </div>
+      <a class="card__tryon" href="tryon.html?s=${p.shoe.id}&c=${p.index}">[ TRY IT ON ] YOUR FLOOR / YOUR FEET &gt;&gt;&gt;</a>
     </div>`;
   sizePicker(el.querySelector('[data-sizes]'), p, (s) => { size = s; el.querySelector('[data-msg]').textContent = ''; });
   el.querySelector('[data-buy]').addEventListener('click', () => {

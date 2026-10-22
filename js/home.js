@@ -183,6 +183,7 @@ function updateBuy() {
   sizePicker($('#buy-sizes'), p, (s) => { buySize = s; $('#buy-size-msg').textContent = ''; }, buySize);
   $('#buy-name').textContent = `${shoe.name} ${p.name} / ${p.stock ? pad(p.stock) + ' LEFT' : 'SOLD OUT'}`;
   $('#buy-price').textContent = '€' + p.price;
+  $('#buy-tryon').href = `tryon.html?s=${shoe.id}&c=${cwIndex}`;
   const btn = $('#buy-btn');
   btn.disabled = p.stock === 0;
   btn.textContent = p.stock === 0 ? 'GONE. SORRY.' : 'RESERVE >>>';

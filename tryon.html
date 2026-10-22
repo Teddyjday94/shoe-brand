@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SLAB® Try On</title>
+<meta name="description" content="Put a SLAB® shoe on your floor in AR, or on your feet with the Snapchat lens.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=EB+Garamond:ital@1&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.3.1/dist/model-viewer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+</head>
+<body>
+
+<header class="bar">
+  <a class="bar__logo" href="index.html">SLAB<sup>®</sup></a>
+  <nav class="bar__nav" aria-label="Main">
+    <a href="index.html">[ INSPECT ]</a>
+    <a href="shop.html">[ SHOP ]</a>
+    <a href="tryon.html" aria-current="page">[ TRY ON ]</a>
+    <a href="lab.html">[ LAB ]</a>
+    <a href="rules.html">[ RULES ]</a>
+  </nav>
+  <button class="bar__cart" type="button" aria-controls="drawer" aria-expanded="false">CART <output id="cart-count">00</output></button>
+</header>
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker__track">
+    <span>TRY ON /// LIFE SIZE /// YOUR FLOOR OR YOUR FEET /// NO FITTING ROOM /// NO SALESPERSON /// </span>
+    <span>TRY ON /// LIFE SIZE /// YOUR FLOOR OR YOUR FEET /// NO FITTING ROOM /// NO SALESPERSON /// </span>
+  </div>
+</div>
+
+<main>
+  <section class="pagehead">
+    <div class="pagehead__meta"><samp>[ 03 / TRY ON ]</samp><samp>AR / LIFE SIZE / US M 9</samp></div>
+    <h1 class="pagehead__title">TRY ON</h1>
+    <p class="pagehead__copy">Drop the pair on your floor at real size, walk around it, crouch down to it. Or put it on your feet with the Snapchat lens.</p>
+  </section>
+
+  <!-- ─── ROOM AR ─── -->
+  <section class="tryon" aria-label="See it in your room">
+    <div class="tryon__stage">
+      <model-viewer id="viewer" class="tryon__viewer"
+        ar ar-modes="webxr scene-viewer quick-look" ar-scale="fixed" ar-placement="floor"
+        camera-controls touch-action="pan-y" interaction-prompt="none"
+        camera-orbit="-35deg 72deg 0.75m" min-camera-orbit="auto 20deg auto" max-camera-orbit="auto 88deg auto"
+        shadow-intensity="1" shadow-softness="0.5" exposure="1" tone-mapping="neutral"
+        environment-image="assets/studio.hdr"
+        alt="3D SLAB shoe you can rotate, and place life-size on your floor in AR">
+        <button slot="ar-button" class="tryon__ar btn btn--buy" type="button">[ PUT IT ON YOUR FLOOR ] &gt;&gt;&gt;</button>
+        <div slot="progress-bar" class="tryon__progress"><i id="mv-bar"></i></div>
+      </model-viewer>
+      <samp class="tryon__tag" id="viewer-tag">MK-1 / MIDNIGHT</samp>
+      <samp class="tryon__hint">DRAG TO TURN / PINCH TO ZOOM</samp>
+    </div>
+
+    <aside class="tryon__panel">
+      <div class="tryon__group variants variants--shoes">
+        <samp>MODEL</samp>
+        <div class="variants__row" id="to-shoes"></div>
+      </div>
+      <div class="tryon__group variants">
+        <samp>COLORWAY</samp>
+        <div class="variants__row" id="to-colors"></div>
+      </div>
+
+      <!-- phones / headsets that can do AR -->
+      <div class="tryon__ar-steps" id="ar-steps" hidden>
+        <p class="kicker">[ HOW IT WORKS ]</p>
+        <ol class="tryon__steps">
+          <li><span>01</span>TAP <b>PUT IT ON YOUR FLOOR</b>.</li>
+          <li><span>02</span>POINT YOUR CAMERA AT THE FLOOR AND MOVE IT SLOWLY.</li>
+          <li><span>03</span>THE SHOE LANDS AT REAL SIZE. WALK AROUND IT.</li>
+        </ol>
+      </div>
+
+      <!-- desktop: hand off to a phone -->
+      <div class="tryon__qr" id="ar-qr" hidden>
+        <p class="kicker">[ OPEN ON YOUR PHONE ]</p>
+        <div class="tryon__qr-row">
+          <div class="qr" id="qr" role="img" aria-label="QR code that opens this page, with this shoe selected, on your phone"></div>
+          <p>AR needs a phone camera. Scan this and the same shoe opens ready to drop on your floor.</p>
+        </div>
+      </div>
+
+      <output class="tryon__status" id="ar-status"></output>
+      <div class="tryon__buy">
+        <div class="buy__price"><samp id="to-name">—</samp><b id="to-price">€—</b></div>
+        <a class="btn btn--buy" id="to-shop" href="shop.html">RESERVE &gt;&gt;&gt;</a>
+      </div>
+    </aside>
+  </section>
+
+  <div class="stripes" aria-hidden="true"></div>
+
+  <!-- ─── ON YOUR FEET: Snapchat lens ─── -->
+  <section class="lens" aria-label="Try it on your feet with Snapchat">
+    <div class="lens__head">
+      <p class="kicker">[ ON YOUR FEET ]</p>
+      <h2 class="h2">POINT IT<br>AT YOUR FEET.</h2>
+      <p class="lens__copy">Foot-tracked try-on runs in Snapchat: it finds both feet, fits the pair to them and keeps it there while you walk. Tap the screen inside the lens to change colorway.</p>
+    </div>
+    <div class="lens__cards" id="lens-cards"></div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="foot__mega" aria-hidden="true">SLAB<sup>®</sup></div>
+  <nav class="foot__nav" aria-label="Footer">
+    <a href="index.html">01 / INSPECT</a><a href="shop.html">02 / SHOP</a><a href="tryon.html">03 / TRY ON</a><a href="lab.html">04 / LAB</a><a href="rules.html">05 / RULES</a>
+  </nav>
+  <form class="signup" id="signup">
+    <label for="email"><samp>DROP 005 NOTICE — ENTER EMAIL</samp></label>
+    <div class="signup__row">
+      <input id="email" type="email" required placeholder="YOU@SOMEWHERE.COM" autocomplete="email">
+      <button type="submit" aria-label="Sign up">&gt;&gt;&gt;</button>
+    </div>
+    <output id="signup-out"></output>
+  </form>
+  <div class="barcode" aria-hidden="true"></div>
+  <div class="foot__meta">
+    <samp>© 2026 SLAB FOOTWEAR (FICTIONAL). A MOCK-UP.</samp>
+    <samp>MK-1 MODEL: “MATERIALSVARIANTSSHOE” © SHOPIFY, CC-BY 4.0, VIA KHRONOS GLTF-SAMPLE-ASSETS.</samp>
+    <samp>HI-1 MODEL: “SNEAKER” BY SHADERSCULPTOR, GENERATED WITH SLOYD, CC-BY 4.0.</samp>
+    <samp>TRK-1 MODEL: “A SLEEK, EDGY SNEAKER…” BY PURPLESHADE3D, GENERATED WITH SLOYD, CC-BY 4.0.</samp>
+    <samp>NO COOKIES. NO TRACKING. NO DISCOUNT CODES.</samp>
+  </div>
+</footer>
+
+<script type="module" src="js/tryon.js"></script>
+</body>
+</html>

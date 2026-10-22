@@ -346,6 +346,57 @@ s { text-decoration-color: var(--red); text-decoration-thickness: .14em; }
 .feedctl .variants__row button[aria-pressed="true"] { background: var(--red); color: var(--paper-2); }
 .feedctl .variants__row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 
+/* ── try-on entry links ── */
+.buy__tryon, .card__tryon { display: block; font-weight: 700; font-size: 11px; padding: 8px 10px; border: 2px dashed var(--ink); text-align: center; }
+.buy__tryon:hover, .card__tryon:hover { background: var(--ink); color: var(--paper-2); border-style: solid; }
+
+/* ── try on: room AR ── */
+.tryon { display: grid; grid-template-columns: 1fr 380px; border-bottom: var(--line); }
+.tryon__stage { position: relative; min-height: 70vh; border-right: var(--line);
+  background:
+    linear-gradient(var(--ink) 1px, transparent 1px) 0 0 / 100% 60px,
+    linear-gradient(90deg, var(--ink) 1px, transparent 1px) 0 0 / 60px 100%,
+    var(--paper); }
+.tryon__stage::before { content: ''; position: absolute; inset: 0; background: var(--paper); opacity: .9; pointer-events: none; }
+.tryon__viewer { position: absolute; inset: 0; width: 100%; height: 100%; --poster-color: transparent; background: transparent; }
+.tryon__viewer.is-loading { opacity: .6; }
+.tryon__progress { position: absolute; left: 0; right: 0; top: 0; height: 4px; background: transparent; }
+.tryon__progress i { display: block; height: 100%; background: var(--red); transform: scaleX(0); transform-origin: 0 50%; }
+.tryon__ar { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); padding: 14px 18px; font-weight: 700; white-space: nowrap; }
+.tryon__tag, .tryon__hint { position: absolute; z-index: 2; pointer-events: none; }
+.tryon__tag { top: 14px; left: 16px; background: var(--ink); color: var(--paper-2); padding: 3px 8px; }
+.tryon__hint { top: 14px; right: 16px; opacity: .6; }
+.tryon__panel { background: var(--paper-2); display: flex; flex-direction: column; }
+.tryon__panel > * { padding: 16px; border-bottom: var(--line); margin: 0; }
+.tryon__group { display: grid; gap: 8px; }
+.tryon__group .variants__row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tryon__steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.tryon__steps li { display: flex; gap: 12px; }
+.tryon__steps span { color: var(--red); font-weight: 700; }
+.tryon__qr-row { display: grid; grid-template-columns: 132px 1fr; gap: 14px; align-items: center; }
+.tryon__qr-row p { margin: 0; text-transform: none; letter-spacing: .01em; }
+.qr { width: 132px; aspect-ratio: 1; padding: 8px; background: #fff; border: var(--line); }
+.qr svg { display: block; width: 100%; height: 100%; }
+.qr svg path, .qr svg rect[fill="black"] { fill: var(--ink); }
+.qr--small { width: 112px; }
+.tryon__status { color: var(--red); font-weight: 700; min-height: 0; }
+.tryon__status:empty { display: none; }
+.tryon__buy { margin-top: auto; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 12px; border-bottom: 0 !important; background: var(--paper); }
+.tryon__buy .btn { padding: 14px 16px; font-weight: 700; }
+
+/* ── try on: Snapchat lenses ── */
+.lens { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); border-bottom: var(--line); }
+.lens__head { padding: 40px; border-right: var(--line); }
+.lens__copy { text-transform: none; letter-spacing: .01em; max-width: 42ch; margin: 0; }
+.lens__cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; background: var(--ink); }
+.lens__card { background: var(--paper-2); display: flex; flex-direction: column; }
+.lens__card img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; border-bottom: var(--line); background: var(--paper); }
+.lens__body { padding: 14px; display: grid; gap: 10px; align-content: start; }
+.lens__body h3 { margin: 0; font-family: var(--heavy); font-weight: 400; font-size: 32px; letter-spacing: -.04em; line-height: 1; }
+.lens__link { text-decoration: underline; text-decoration-color: var(--red); text-decoration-thickness: 2px; font-weight: 700; }
+.lens__soon { border: 2px dashed var(--ink); padding: 10px; text-align: center; font-weight: 700; }
+.lens__card.is-pending img { filter: grayscale(1); opacity: .6; }
+
 /* ── shop: one block per shoe ── */
 .pagehead__jump { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; padding-top: 18px; }
 .pagehead__jump a { border: var(--line); padding: 8px 12px; font-weight: 700; background: var(--paper-2); }
@@ -377,7 +428,7 @@ s { text-decoration-color: var(--red); text-decoration-thickness: .14em; }
 .faq a { text-decoration: underline; text-decoration-color: var(--red); text-decoration-thickness: 2px; }
 
 /* ── footer nav ── */
-.foot__nav { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 2px solid var(--paper-2); }
+.foot__nav { display: grid; grid-template-columns: repeat(5, 1fr); border-top: 2px solid var(--paper-2); }
 .foot__nav a { padding: 16px 40px; border-right: 2px solid var(--paper-2); font-weight: 700; }
 .foot__nav a:last-child { border-right: 0; }
 .foot__nav a:hover { background: var(--red); }
@@ -502,7 +553,12 @@ s { text-decoration-color: var(--red); text-decoration-thickness: .14em; }
   .range__head { grid-template-columns: 1fr; padding: 20px 16px 14px; gap: 10px; }
   .pagehead__jump { padding-top: 0; }
   .pagehead__title { font-size: 30vw; }
-  .dir, .info, .about, .feedwrap { grid-template-columns: 1fr; }
+  .dir, .info, .about, .feedwrap, .tryon, .lens, .lens__cards { grid-template-columns: 1fr; }
+  .tryon__stage { min-height: 62vh; border-right: 0; border-bottom: var(--line); }
+  .tryon__hint { display: none; }
+  .lens__head { padding: 32px 16px; border-right: 0; border-bottom: var(--line); }
+  .lens__card { flex-direction: row; }
+  .lens__card img { width: 40%; aspect-ratio: auto; border-bottom: 0; border-right: var(--line); }
   .film__bar { padding: 6px 6px 6px 16px; justify-content: space-between; }
   .film__note { display: none; }
   .film__toggle { font-size: 11px; padding: 5px 10px; }
