@@ -1,6 +1,11 @@
 // the line: each shoe is one 3D model; each colorway is either a material variant
 // baked into the model (KHR_materials_variants) or a tint applied to its texture
-export const SIZES = [38, 39, 40, 41, 42, 43, 44, 45, 46];
+// US men's sizing
+export const SIZES = [7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5, 12, 13];
+export const SIZE_LABEL = 'US M';
+// carts saved before the switch hold EU sizes
+const EU_TO_US = { 38: 6, 39: 6.5, 40: 7, 41: 8, 42: 8.5, 43: 9.5, 44: 10, 45: 11, 46: 12 };
+export const toUS = (size) => (size >= 30 ? EU_TO_US[size] ?? size : size);
 
 export const SHOES = [
   {
@@ -15,8 +20,8 @@ export const SHOES = [
       '4mm lugs in hazard rubber. Grip on wet ramps, gravel, oil. The pattern is not decorative. Nothing here is.',
     ],
     colorways: [
-      { key: 'midnight', name: 'MIDNIGHT', variant: 0, price: 189, stock: 12, gone: [46], note: 'NIGHT SHIFT' },
-      { key: 'beach', name: 'BEACH', variant: 1, price: 179, stock: 3, gone: [38, 44, 45], note: 'SALT DAMAGE' },
+      { key: 'midnight', name: 'MIDNIGHT', variant: 0, price: 189, stock: 12, gone: [13], note: 'NIGHT SHIFT' },
+      { key: 'beach', name: 'BEACH', variant: 1, price: 179, stock: 3, gone: [7, 10.5, 11], note: 'SALT DAMAGE' },
       { key: 'street', name: 'STREET', variant: 2, price: 169, stock: 0, gone: SIZES, note: 'ALREADY GONE' },
     ],
   },
@@ -35,8 +40,8 @@ export const SHOES = [
       'A herringbone court sole. It squeaks on wood, grips on concrete, ignores everything else.',
     ],
     colorways: [
-      { key: 'ice', name: 'ICE', tint: { hue: 0, sat: 1, light: 1 }, price: 219, stock: 9, gone: [38], note: 'COLD START' },
-      { key: 'brick', name: 'BRICK', tint: { hue: -150, sat: 1.05, light: 0.92 }, price: 219, stock: 4, gone: [39, 45, 46], note: 'LOAD BEARING' },
+      { key: 'ice', name: 'ICE', tint: { hue: 0, sat: 1, light: 1 }, price: 219, stock: 9, gone: [7], note: 'COLD START' },
+      { key: 'brick', name: 'BRICK', tint: { hue: -150, sat: 1.05, light: 0.92 }, price: 219, stock: 4, gone: [7.5, 11.5, 13], note: 'LOAD BEARING' },
       { key: 'smoke', name: 'SMOKE', tint: { hue: 0, sat: 0, light: 0.9 }, price: 199, stock: 15, gone: [], note: 'ASH GREY' },
     ],
   },
@@ -53,8 +58,8 @@ export const SHOES = [
       'A 45mm stacked sole with a split heel. Ridiculous on paper. Very good at standing still in.',
     ],
     colorways: [
-      { key: 'rave', name: 'RAVE', tint: { hue: 0, sat: 1, light: 1 }, price: 239, stock: 6, gone: [46], note: 'AFTERHOURS' },
-      { key: 'acid', name: 'ACID', tint: { hue: 95, sat: 1.15, light: 1 }, price: 239, stock: 2, gone: [38, 39, 43, 44], note: 'DO NOT LOOK' },
+      { key: 'rave', name: 'RAVE', tint: { hue: 0, sat: 1, light: 1 }, price: 239, stock: 6, gone: [13], note: 'AFTERHOURS' },
+      { key: 'acid', name: 'ACID', tint: { hue: 95, sat: 1.15, light: 1 }, price: 239, stock: 2, gone: [7, 7.5, 9.5, 10], note: 'DO NOT LOOK' },
       { key: 'blackout', name: 'BLACKOUT', tint: { hue: 0, sat: 0.12, light: 0.62 }, price: 229, stock: 11, gone: [], note: 'NO LIGHTS' },
     ],
   },

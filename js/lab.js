@@ -141,7 +141,7 @@ async function buildDock() {
     g.fillStyle = '#f4f4f0'; g.font = '120px "Archivo Black", Arial Black'; g.textBaseline = 'alphabetic';
     g.fillText('SLAB', 24, 140);
     g.font = '28px "JetBrains Mono", monospace';
-    g.fillText('MK-1 / EU 42 / BATCH 004', 24, h * 0.86);
+    g.fillText('MK-1 / US M 9 / BATCH 004', 24, h * 0.86);
   });
   const boxSide = std({ map: boxTex, roughness: 0.7 }), boxPlain = std({ color: 0xe61919, roughness: 0.7 }), boxDark = std({ color: 0x0d0d0d, roughness: 0.7 });
   const shoebox = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.3, 2.2), [boxPlain, boxPlain, boxDark, boxDark, boxSide, boxSide]);

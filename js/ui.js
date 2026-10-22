@@ -1,5 +1,5 @@
 // shared chrome for every page: cursor, cart + drawer, size picker, reveals, signup
-import { SIZES, productByKey } from './data.js';
+import { SIZES, SIZE_LABEL, productByKey, toUS } from './data.js';
 
 export const $ = (s, root = document) => root.querySelector(s);
 export const $$ = (s, root = document) => [...root.querySelectorAll(s)];
@@ -14,7 +14,7 @@ export const flashClass = (el, cls) => { el.classList.remove(cls); void el.offse
 export function sizePicker(container, product, onPick, selected = null) {
   container.innerHTML = '';
   container.setAttribute('role', 'radiogroup');
-  container.setAttribute('aria-label', 'Size EU');
+  container.setAttribute('aria-label', `Size ${SIZE_LABEL}`);
   SIZES.forEach((s) => {
     const b = document.createElement('button');
     b.type = 'button';
@@ -81,9 +81,9 @@ function renderCart() {
       <div>
         <samp>${pad(n + 1)} / SKU ${it.p.sku}</samp>
         <b>${it.p.shoe.name} / ${it.p.name}</b>
-        <samp>EU ${it.size} · €${it.p.price}</samp>
+        <samp>${SIZE_LABEL} ${toUS(it.size)} · €${it.p.price}</samp>
       </div>
-      <button type="button" class="line__x" data-id="${it.id}" aria-label="Remove ${it.p.shoe.name} ${it.p.name} EU ${it.size}">×</button>
+      <button type="button" class="line__x" data-id="${it.id}" aria-label="Remove ${it.p.shoe.name} ${it.p.name} ${SIZE_LABEL} ${toUS(it.size)}">×</button>
     </li>`).join('');
 }
 

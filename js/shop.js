@@ -17,7 +17,7 @@ function card(p) {
     </div>
     <div class="card__body">
       <div class="card__row"><h3 class="card__name">${p.shoe.name} / ${p.name}</h3><span class="card__price">€${p.price}</span></div>
-      <div class="card__sizes"><samp>SIZE / EU <span class="red" data-msg></span></samp><div class="sizes" data-sizes></div></div>
+      <div class="card__sizes"><samp>SIZE / US MEN'S <span class="red" data-msg></span></samp><div class="sizes" data-sizes></div></div>
       <div class="card__actions">
         <a class="btn" href="index.html?s=${p.shoe.id}&c=${p.index}">VIEW IN 3D</a>
         <button class="btn btn--buy" type="button" data-buy ${soldOut ? 'disabled' : ''}>${soldOut ? 'GONE' : 'RESERVE'}</button>

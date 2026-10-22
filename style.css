@@ -438,7 +438,7 @@ s { text-decoration-color: var(--red); text-decoration-thickness: .14em; }
 .btn:disabled { opacity: .45; box-shadow: none; pointer-events: none; }
 
 /* ── size grid ── */
-.sizes { display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px; background: var(--ink); border: 1px solid var(--ink); }
+.sizes { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px; background: var(--ink); border: 1px solid var(--ink); }
 .sizes button {
   font: inherit; font-size: 11px; letter-spacing: 0; padding: 7px 0; border: 0;
   background: var(--paper-2); color: var(--ink);
