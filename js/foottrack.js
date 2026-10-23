@@ -279,9 +279,14 @@ class OneEuro {
 
 /** Keeps two feet as stable tracks across frames; smooths their poses. */
 export class FeetTracker {
-  constructor({ lostAfterMs = 350 } = {}) { this.tracks = []; this.lostAfterMs = lostAfterMs; }
+  constructor({ lostAfterMs = 350 } = {}) { this.tracks = []; this.lostAfterMs = lostAfterMs; this.prev = 0; this.gap = 0; }
 
   update(feet, K, now) {
+    // a slow phone may take longer than lostAfterMs per detection: a foot is only lost once
+    // it has been missing for a few detections, however long those take
+    if (this.prev) this.gap = this.gap ? this.gap * 0.8 + (now - this.prev) * 0.2 : now - this.prev;
+    this.prev = now;
+    const lostAfter = Math.max(this.lostAfterMs, this.gap * 3.5);
     const used = new Set();
     // match detections to existing tracks by box centre
     for (const tr of this.tracks) {
@@ -295,7 +300,7 @@ export class FeetTracker {
       if (bi >= 0 && bd < Math.max(K.w, K.h) * 0.25) { used.add(bi); tr.apply(feet[bi], K, now); }
     }
     feet.forEach((f, i) => { if (!used.has(i) && this.tracks.length < 2) { const tr = new Track(); tr.apply(f, K, now); this.tracks.push(tr); } });
-    this.tracks = this.tracks.filter((tr) => now - tr.seen < this.lostAfterMs);
+    this.tracks = this.tracks.filter((tr) => now - tr.seen < lostAfter);
     return this.tracks.filter((tr) => tr.pose);
   }
 }

@@ -13,6 +13,7 @@ import { shoeById } from '../js/data.js';
 const q = new URLSearchParams(location.search);
 const log = (s) => { document.getElementById('log').textContent += s + '\n'; };
 const OUT = q.get('out') || 'run', FPS = +q.get('fps') || 15, MAXW = +q.get('maxw') || 720;
+const MIN = +q.get('min') || 0.4; // detection score threshold, as on the live page
 const shoe = shoeById(q.get('s')), cw = shoe.colorways[+(q.get('c') || 0)];
 const COLORS = ['#ff2a2a', '#2a7bff', '#ffd400', '#00e0a0', '#ff00ff', '#00ffff', '#ff8800', '#ffffff'];
 
@@ -34,7 +35,7 @@ async function processFrame(src, sw, sh, tracker, tMs, name) {
   const K = intrinsics(w, h, +(q.get('fov') || 64));
   scene.resize(K);
   scene.bg.needsUpdate = true;
-  const det = await detector.detect(frame, w, h);
+  const det = await detector.detect(frame, w, h, { minScore: MIN });
   const tracks = tracker.update(det.feet, K, tMs);
   // let the fade settle on stills; one step per frame on video
   for (let i = 0; i < (q.has('images') ? 20 : 1); i++) scene.update(tracks, det.brightness, 1 / FPS);
@@ -90,4 +91,5 @@ if (q.has('seq')) {
   log(`posed on ${found}/${n} frames`);
 }
 log('DONE');
+await save('log.txt', document.getElementById('log').textContent); // readable when run headless
 </script></body></html>
