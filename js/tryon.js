@@ -1,7 +1,7 @@
 // TRY ON: life-size AR on your floor (model-viewer → Quick Look / Scene Viewer / WebXR),
-// a QR hand-off for desktops, live on-your-feet try-on (feet.html) and the Snapchat lenses
+// and a QR hand-off for desktops
 import { $, clamp, pad } from './ui.js';
-import { SHOES, SNAP_LENSES, arModel, shoeById } from './data.js';
+import { SHOES, arModel, shoeById } from './data.js';
 
 const viewer = $('#viewer');
 const qs = new URLSearchParams(location.search);
@@ -45,10 +45,6 @@ function show() {
   u.search = `?s=${shoe.id}&c=${cw}`;
   history.replaceState(null, '', u);
   $('#qr').innerHTML = qrSvg(u.href);
-
-  const feet = new URL(`feet.html?s=${shoe.id}&c=${cw}`, location.href);
-  $('#feet-go').href = feet.href;
-  $('#qr-feet').innerHTML = qrSvg(feet.href);
 }
 
 /* ── AR availability: phones get steps, desktops get the QR hand-off ── */
@@ -71,30 +67,5 @@ viewer.addEventListener('ar-status', (e) => {
   if (msg) $('#ar-status').textContent = msg;
 });
 viewer.addEventListener('error', () => { $('#ar-status').textContent = 'MODEL FAILED TO LOAD. RELOAD THE PAGE.'; });
-
-/* ── on your feet: phones go straight in, desktops also get a QR ── */
-const phone = matchMedia('(pointer: coarse)').matches;
-$('#feet-qr').hidden = phone;
-
-/* ── Snapchat lenses: one per shoe, section stays hidden until one is published ── */
-$('#snap').hidden = !SHOES.some((s) => SNAP_LENSES[s.id]);
-$('#lens-cards').replaceChildren(...SHOES.map((s) => {
-  const url = SNAP_LENSES[s.id];
-  const el = document.createElement('article');
-  el.className = 'lens__card' + (url ? '' : ' is-pending');
-  el.innerHTML = `
-    <img src="assets/${s.id}-${s.colorways[0].key}.png" alt="" loading="lazy">
-    <div class="lens__body">
-      <h3>${s.name}</h3>
-      <samp>${s.type} / ${s.colorways.length} COLORWAYS</samp>
-      ${url
-        ? (phone
-          ? `<a class="btn btn--buy" href="${url}" target="_blank" rel="noopener">OPEN IN SNAPCHAT &gt;&gt;&gt;</a>`
-          : `<div class="qr qr--small" role="img" aria-label="QR code for the ${s.name} Snapchat lens">${qrSvg(url)}</div>
-             <a class="lens__link" href="${url}" target="_blank" rel="noopener">SCAN WITH SNAPCHAT OR OPEN LINK</a>`)
-        : '<samp class="lens__soon">LENS IN REVIEW / LANDING SOON</samp>'}
-    </div>`;
-  return el;
-}));
 
 show();

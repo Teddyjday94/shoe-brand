@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SLAB® Try On</title>
-<meta name="description" content="Put a SLAB® shoe on your floor in AR, or on your feet live in your browser.">
+<meta name="description" content="Put a SLAB® shoe on your floor in AR, at real size.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=EB+Garamond:ital@1&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -28,8 +28,8 @@
 
 <div class="ticker" aria-hidden="true">
   <div class="ticker__track">
-    <span>TRY ON /// LIFE SIZE /// YOUR FLOOR OR YOUR FEET /// NO FITTING ROOM /// NO SALESPERSON /// </span>
-    <span>TRY ON /// LIFE SIZE /// YOUR FLOOR OR YOUR FEET /// NO FITTING ROOM /// NO SALESPERSON /// </span>
+    <span>TRY ON /// LIFE SIZE /// ON YOUR FLOOR /// NO FITTING ROOM /// NO SALESPERSON /// </span>
+    <span>TRY ON /// LIFE SIZE /// ON YOUR FLOOR /// NO FITTING ROOM /// NO SALESPERSON /// </span>
   </div>
 </div>
 
@@ -37,7 +37,7 @@
   <section class="pagehead">
     <div class="pagehead__meta"><samp>[ 03 / TRY ON ]</samp><samp>AR / LIFE SIZE / US M 9</samp></div>
     <h1 class="pagehead__title">TRY ON</h1>
-    <p class="pagehead__copy">Drop the pair on your floor at real size, walk around it, crouch down to it. Or point your phone at your feet and wear it.</p>
+    <p class="pagehead__copy">Drop the pair on your floor at real size, walk around it, crouch down to it.</p>
   </section>
 
   <!-- ─── ROOM AR ─── -->
@@ -92,38 +92,6 @@
         <a class="btn btn--buy" id="to-shop" href="shop.html">RESERVE &gt;&gt;&gt;</a>
       </div>
     </aside>
-  </section>
-
-  <div class="stripes" aria-hidden="true"></div>
-
-  <!-- ─── ON YOUR FEET: in-browser foot tracking ─── -->
-  <section class="lens" aria-label="Try it on your feet">
-    <div class="lens__head">
-      <p class="kicker">[ ON YOUR FEET / BETA ]</p>
-      <h2 class="h2">POINT IT<br>AT YOUR FEET.</h2>
-      <p class="lens__copy">Live in your browser, no app. The camera finds both feet and fits the pair to them while you move. It all runs on your device: the video never leaves it.</p>
-    </div>
-    <div class="feetgo">
-      <ol class="tryon__steps">
-        <li><span>01</span><div>TAP <b>PUT THEM ON</b> AND ALLOW THE CAMERA.</div></li>
-        <li><span>02</span><div>POINT IT DOWN AT YOUR FEET. GOOD LIGHT, BOTH FEET IN VIEW.</div></li>
-        <li><span>03</span><div>SWITCH MODEL AND COLORWAY AS YOU GO. TAKE A SNAPSHOT.</div></li>
-      </ol>
-      <a class="btn btn--buy" id="feet-go" href="feet.html">[ PUT THEM ON ] &gt;&gt;&gt;</a>
-      <div class="tryon__qr-row" id="feet-qr" hidden>
-        <div class="qr" id="qr-feet" role="img" aria-label="QR code that opens the on-your-feet try-on, with this shoe selected, on your phone"></div>
-        <p>Works best on a phone. Scan this and it opens with the same shoe, ready to put on.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ─── Snapchat lenses: shown once one is published ─── -->
-  <section class="lens" id="snap" aria-label="Try it on in Snapchat" hidden>
-    <div class="lens__head">
-      <p class="kicker">[ OR IN SNAPCHAT ]</p>
-      <p class="lens__copy">The same try-on as a Snapchat lens. Tap the screen inside the lens to change colorway.</p>
-    </div>
-    <div class="lens__cards" id="lens-cards"></div>
   </section>
 </main>
 
