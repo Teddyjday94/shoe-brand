@@ -1,7 +1,7 @@
 // dev-only: serves the repo (so ml/gen.html can import ../js/*) and saves generated
 // training images + labels under ml/data/. Not part of the site. `node ml/datasrv.mjs`
 import { createServer } from 'node:http';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import { extname, join, normalize, dirname } from 'node:path';
 
 const root = normalize(join(new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'), '..'));
@@ -24,6 +24,15 @@ createServer(async (req, res) => {
     await mkdir(dirname(file), { recursive: true });
     await writeFile(file, Buffer.concat(chunks));
     res.writeHead(201).end();
+    return;
+  }
+  if (url.pathname === '/list') {
+    // ?dir=real/ann — file names under ml/data (the labeller uses it to find saved labels)
+    const rel = url.searchParams.get('dir') || '';
+    const dir = normalize(join(dataRoot, rel));
+    if (!/^[a-z0-9_\-/]+$/.test(rel) || !dir.startsWith(dataRoot)) { res.writeHead(400).end(); return; }
+    const files = await readdir(dir).catch(() => []);
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }).end(JSON.stringify(files));
     return;
   }
   let path = decodeURIComponent(url.pathname);
