@@ -384,8 +384,11 @@ s { text-decoration-color: var(--red); text-decoration-thickness: .14em; }
 .tryon__buy { margin-top: auto; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 12px; border-bottom: 0 !important; background: var(--paper); }
 .tryon__buy .btn { padding: 14px 16px; font-weight: 700; }
 
-/* ── try on: Snapchat lenses ── */
+/* ── try on: on your feet (feet.html) + Snapchat lenses ── */
 .lens { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); border-bottom: var(--line); }
+.lens[hidden], .tryon__qr-row[hidden] { display: none; }
+.feetgo { padding: 40px; display: grid; gap: 20px; align-content: start; justify-items: start; }
+.feetgo .btn { padding: 14px 16px; font-weight: 700; }
 .lens__head { padding: 40px; border-right: var(--line); }
 .lens__copy { text-transform: none; letter-spacing: .01em; max-width: 42ch; margin: 0; }
 .lens__cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; background: var(--ink); }
@@ -557,6 +560,8 @@ s { text-decoration-color: var(--red); text-decoration-thickness: .14em; }
   .tryon__stage { min-height: 62vh; border-right: 0; border-bottom: var(--line); }
   .tryon__hint { display: none; }
   .lens__head { padding: 32px 16px; border-right: 0; border-bottom: var(--line); }
+  .feetgo { padding: 24px 16px 32px; justify-items: stretch; }
+  .feetgo .btn { text-align: center; }
   .lens__card { flex-direction: row; }
   .lens__card img { width: 40%; aspect-ratio: auto; border-bottom: 0; border-right: var(--line); }
   .film__bar { padding: 6px 6px 6px 16px; justify-content: space-between; }

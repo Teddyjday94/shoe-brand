@@ -1,5 +1,5 @@
 // TRY ON: life-size AR on your floor (model-viewer → Quick Look / Scene Viewer / WebXR),
-// a QR hand-off for desktops, and the Snapchat foot-tracking lenses
+// a QR hand-off for desktops, live on-your-feet try-on (feet.html) and the Snapchat lenses
 import { $, clamp, pad } from './ui.js';
 import { SHOES, SNAP_LENSES, arModel, shoeById } from './data.js';
 
@@ -45,6 +45,10 @@ function show() {
   u.search = `?s=${shoe.id}&c=${cw}`;
   history.replaceState(null, '', u);
   $('#qr').innerHTML = qrSvg(u.href);
+
+  const feet = new URL(`feet.html?s=${shoe.id}&c=${cw}`, location.href);
+  $('#feet-go').href = feet.href;
+  $('#qr-feet').innerHTML = qrSvg(feet.href);
 }
 
 /* ── AR availability: phones get steps, desktops get the QR hand-off ── */
@@ -68,8 +72,12 @@ viewer.addEventListener('ar-status', (e) => {
 });
 viewer.addEventListener('error', () => { $('#ar-status').textContent = 'MODEL FAILED TO LOAD. RELOAD THE PAGE.'; });
 
-/* ── Snapchat lenses: one per shoe ── */
+/* ── on your feet: phones go straight in, desktops also get a QR ── */
 const phone = matchMedia('(pointer: coarse)').matches;
+$('#feet-qr').hidden = phone;
+
+/* ── Snapchat lenses: one per shoe, section stays hidden until one is published ── */
+$('#snap').hidden = !SHOES.some((s) => SNAP_LENSES[s.id]);
 $('#lens-cards').replaceChildren(...SHOES.map((s) => {
   const url = SNAP_LENSES[s.id];
   const el = document.createElement('article');
